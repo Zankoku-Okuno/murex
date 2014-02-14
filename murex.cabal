@@ -18,4 +18,6 @@ cabal-version:       >=1.8
 executable demo
   main-is:             demo.hs
   -- other-modules:       
-  build-depends:       base ==4.6.*, hexpr
+  build-depends:       base ==4.6.*, containers ==0.5.*, text ==0.11.*, symbol ==0.2.*,
+                       transformers ==0.3.*,
+                       hexpr

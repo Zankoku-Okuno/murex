@@ -126,6 +126,7 @@ Stage Nine
 ----------
   * Cleanup 
   * Compiler
+  * REPL
 
 Further
 -------
