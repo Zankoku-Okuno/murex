@@ -1,10 +1,4 @@
-module Murex.Data (
-      MurexData(..)
-
-    , addNum
-
-    , seqIndex
-    ) where
+module Murex.Data where
 
 import Import
 import Data.Ratio
@@ -22,6 +16,7 @@ data MurexData = MurexUnit
                | MurexVariant (Either Int Symbol) MurexData
 
 
+------ Arithmetic ------
 addNum :: MurexData -> MurexData -> MurexData
 addNum (MurexNum a) (MurexNum b) = MurexNum (a + b)
 ----TODO verify these choice against floating point standards
@@ -62,3 +57,24 @@ instance Show MurexData where
     show (MurexVariant l x) = "{" ++ showRecordItem (l, x) ++ "}"
 showRecordItem (l, x) = "`" ++ show l ++ " " ++ show x
 
+
+------ Builtins ------
+data Builtin = PutChr
+             | GetChr
+             | PutStr
+             | GetStr
+             --TODO more builtins
+instance Show Builtin where
+    show x = "<builtin:" ++ go x ++ ">"
+        where
+        go PutChr = "putChr"
+        go GetChr = "getChr"
+        go PutStr = "putStr"
+        go GetStr = "getStr"
+
+
+------ Murex <-> Haskell ------
+fromMurexChar :: MurexData -> Char
+fromMurexChar (MurexChar c) = c
+toMurexChar :: Char -> MurexData
+toMurexChar c = MurexChar c
