@@ -1,0 +1,71 @@
+Primitive data types and operations
+===================================
+
+Unit
+Booleans
+Numbers:
+	Signed/Unsigned Integer
+	Rational
+	Signed/Unsigned Words (8, 64, 32, 16,...)
+	Floating point (64,128,32,...)
+	Q \cup {inf, -inf, -0, NaN} (for internal use only)
+Characters:
+	Unicode (other charsets can use words in a newtype)
+Records: indexed by index > 0 or name; records over only indexes compacted towards zero are called tuples
+Variants: indexed by index > 0 or name
+Sequences: indexed by index >= 0, dynamically merge/splitable, finger tree implementation is preferred
+Bitfields: as in C
+Reference Cells:
+	plain mutable cell, like a C pointer
+	locking cell
+Array: reference cells allocated in contiguous memory, like C arrays, but with bounds checking
+Channel: simplex, duplex, broadcaster, transmitter (some of these need not be primitive)
+Handle: file handles, network handles
+Handler: mark points on stack to abort to with function to adjust exception value
+
+
+Builtin functions
+	Bools:		not, eq, and, or, xor
+	Numbers: 	eq? neq? lt? gt? lte? gte?
+				inf? nan? pos? neg? zero?
+				neg add sub mul quo rem quorem div ipow iroot
+				numer denom
+	Floats:
+				exp log pow root
+				sin cos tan sincos
+				asin acos atan (? asincos)
+				sinh cosh tanh sincosh
+				asinh acosh atanh (? asincosh)
+				fma
+	Characters	TODO
+	Records:	project, setField
+	Variants:	project
+	Bitfields:	TODO
+	Sequences:	length get modify set cons snoc cat
+				hd tl init last
+	RefCells:	new deref modify assign
+				TODO locking cells
+	Arrays:		new len get modify set
+	Channels:	new peek recv send TODO
+	Handle:		read write readN writeN TODO
+	Handler:	new TODO
+	Convervions:
+		rational <-> ext-rational
+		rational <-> float_n
+		word_n -> word_m, uword_n -> uword_m
+		char <-> uword_32
+		abs: int -> uint, word_n -> uword_n
+		uint -> int, uword_n -> word_n
+		floor: rational -> integer/(u)word_n, float_n -> integer/(u)word_n/float_n
+		ceil: rational -> integer/(u)word_n, float_n -> integer/(u)word_n/float_n
+		round: rational -> integer/(u)word_n, float_n -> integer/(u)word_n/float_n
+		uint <-> bitfield
+
+
+FP flags:
+	reading/clearing fp flags is in the FP monad
+	flags: inexact, overflow, underflow, divzero, valid
+
+
+
+

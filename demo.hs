@@ -11,10 +11,10 @@ goodbye = putStrLn "Goodbyte, cruel world!"
 
 main = do
 	hello
-	interpret $ Apply [murexIgnore,
-						(Apply [Var (intern "putStr"), Apply [Var (intern "getStr"), Literal MurexUnit]]),
-						(Apply [Var (intern "putChr"), Literal (MurexChar '\n')])
-					]
+	interpret $ Apply [Var (intern "putStr"),
+					Apply [Var (intern "snoc"),
+						Apply [Var (intern "getStr"), Literal MurexUnit],
+						Literal (MurexChar '\n')]]
 	print =<< interpret (Apply [Apply [murexIgnore, Literal (MurexNum (1%1))], Literal (MurexNum (2%1))])
 	goodbye
 
