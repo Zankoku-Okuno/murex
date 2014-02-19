@@ -1,0 +1,5 @@
+Murex has applicative evaluation order, but to leave implementations a little freer, the order in which arguments are evaluated and applied does not matter, so long as only values are bound to variables. So, for example:
+	a) a simple interpreter evaluates the first and second expressions in a call, then performs an application
+	b) a more complex interpreter evaluates the first expression, determines how many parameters it naturally has, then evaluates and applies that many arguments
+	c) a compiler generates code that evaluates all the subexpressions in an apply, then applies them to the function.
+All the above examples explicitly demonstrate varying the point where an application occurs, but the order of evaluation has been left implicit and could be different as well (at least in b & c).
