@@ -4,6 +4,7 @@ module Murex.Syntax.Lexer (
     ) where
 
 import Import hiding ((<|>))
+import Control.Monad.Either
 import Murex.Data
 import qualified Data.Char as C
 import Text.Parsec ( Parsec, ParseError, SourceName, runParser
@@ -11,6 +12,7 @@ import Text.Parsec ( Parsec, ParseError, SourceName, runParser
                    , try, (<?>), many1, between
                    , getPosition, getState, modifyState)
 import qualified Text.Parsec as P
+import Text.Parsec.Error
 
 type Lexer = Parsec String [Maybe Int]
 --TODO Reader for config
@@ -20,15 +22,18 @@ type Lexer = Parsec String [Maybe Int]
 data Token = Space
            | Indent | Newline | Dedent | OpenParen | CloseParen
            | OpenBrack | CloseBrack | OpenBrace | CloseBrace
-           | Dot | Comma | Ellipsis
+           | Dot | Comma | Ellipsis | At
            | Quote | Quasiquote | Unquote | Splice
            | Name String | Label (Either Integer String)
            | Literal MurexData
-    deriving (Show) --TODO custom show
+    deriving (Eq)
 
 
 runLexer :: SourceName -> String -> Either ParseError [Pos Token]
-runLexer source input = runParser murex [] source input
+runLexer source input = runEither $ do
+    raw <- hoistEither $ runParser murex [] source input
+    return $ sanityCheck raw
+    hoistEither $ postprocess raw
 --TODO preprocess literate input (bird foot to space, blank out lines that don't start w/ birdfeet)
 
 murex :: Lexer [Pos Token]
@@ -44,6 +49,7 @@ murex = between initialize finalize (many token)
 
 token :: Lexer (Pos Token)
 token = choice [ whitespace
+               , literal --must come before open paren, before name
                , opener
                , closer
                , punctuation
@@ -51,11 +57,47 @@ token = choice [ whitespace
                , indentation
                , indentMark
                , label
-               , literal
                , name
                ]
 
---TODO sanity check: no leading/trailing space, no double spaces
+sanityCheck :: [Pos Token] -> [Pos Token]
+sanityCheck xs = (filterDoubleSpaces . filterEndspaces) xs
+    where
+    filterEndspaces [] = []
+    filterEndspaces xs = case snd (head xs) of
+        Space -> die
+        Newline -> die
+        Indent -> die
+        Dedent -> die
+        _ -> case snd (last xs) of
+            Space -> die
+            Newline -> die
+            Indent -> die
+    filterDoubleSpaces [] = xs
+    filterDoubleSpaces ((_,Space):(_,Space):xs) = die
+    filterDoubleSpaces (x:xs) = filterDoubleSpaces xs
+    die = error $ "INTERNAL ERROR: sanity check fail\n" ++ show xs
+
+postprocess :: [Pos Token] -> Either ParseError [Pos Token]
+postprocess input = go input
+    where
+    go [] = Right stripSpaces
+    go (x:[]) = Right stripSpaces
+    go ((_,Space):xs) = go xs
+    go ((posX, x):allY@(posY, y):xs) = case (needsSpacey x, isSpacey y) of
+        (True, True) -> go (allY:xs)
+        (True, False) -> if isException x y
+                            then go (allY:xs)
+                            else Left $ addErrorMessage (Expect "whitespace") $ newErrorMessage (SysUnExpect $ show y) posY
+        (False, _) -> go (allY:xs)
+    isSpacey x = x `elem` [Space, Indent, Newline, Dedent, CloseParen, CloseBrack, CloseBrace, Comma, Ellipsis]
+    needsSpacey (Name _) = True
+    needsSpacey (Label _) = True
+    needsSpacey (Literal _) = True
+    needsSpacey _ = False
+    isException (Name _) Dot = True
+    isException _ _ = False
+    stripSpaces = filter ((/= Space) . snd) input
 
 
 whitespace :: Lexer (Pos Token)
@@ -101,6 +143,7 @@ punctuation :: Lexer (Pos Token)
 punctuation = withPos $ choice [ const Ellipsis <$> string ".."
                                , const Dot <$> char '.'
                                , const Comma <$> char ','
+                               , const At <$> char '@'
                                ]
 
 quotation :: Lexer (Pos Token)
@@ -125,11 +168,13 @@ label = (<?> "label") $ withPos $ do
     numLabel = stringToInteger 10 <$> many2 (oneOf "123456789") (oneOf "0123456789")
 
 literal :: Lexer (Pos Token)
-literal = withPos $ Literal <$> choice [ numLit
+literal = withPos $ Literal <$> choice [ unitLit
+                                       , numLit
                                        , charLit
                                        , strLit
                                        ]
     where
+    unitLit = const MurexUnit <$> string "()"
     numLit = (<?> "number") $ try $ do
         sign <- signLiteral
         base <- baseLiteral
@@ -164,7 +209,7 @@ comment = blockComment P.<|> lineComment --block must come before line
         inBlock = oneBlock P.<|> void anyChar
 
 restrictedFromName :: Char -> Bool
-restrictedFromName c = c `elem` "\"\'`\\#.,()[]{}⌜⌞⌟⌝"
+restrictedFromName c = c `elem` "\"\'`\\#.,@()[]{}⌜⌞⌟⌝"
 
 restrictedFromStartOfName :: Char -> Bool
 restrictedFromStartOfName c = c `elem` "0123456789" || restrictedFromName c
@@ -191,6 +236,30 @@ popDisable = maybe (modifyState tail) (const parserZero) =<< peek
 stackNull :: Lexer Bool
 stackNull = null <$> getState
 
+instance Show Token where
+    show Space = "whitespace"
+    show Indent = "indent"
+    show Newline = "newline"
+    show Dedent = "dedent"
+    show OpenParen = "`('"
+    show OpenBrack = "`['"
+    show OpenBrace = "`{'"
+    show CloseParen = "`)'"
+    show CloseBrack = "`]'"
+    show CloseBrace = "`}'"
+    show Dot = "`.'"
+    show Comma = "`,'"
+    show Ellipsis = "`..'"
+    show At = "`@'"
+    show Quote = error "not using Quote tokens"
+    show Quasiquote = "`⌜'"
+    show Unquote = "`⌞'"
+    show Splice = "`⌟'"
+    show (Name name) = "identifier (" ++ name ++ ")"
+    show (Label (Left i)) = "label (" ++ show i ++ ")"
+    show (Label (Right name)) = "label (" ++ name ++ ")"
+    show (Literal MurexUnit) = "literal (unit)"
+    show (Literal x) = "literal (" ++ show x ++ ")"
 
 ------ Basic Combinators ------
 space :: Lexer ()
@@ -342,4 +411,7 @@ stringToInteger base = foldl impl 0
 stringToMantissa :: Int -> String -> Ratio Integer
 stringToMantissa base = (/ (fromIntegral base%1)) . foldr impl (0 % 1)
     where impl x acc = acc / (fromIntegral base%1) + (((%1) . fromIntegral . digitToInt) x)
+
+
+
 

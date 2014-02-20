@@ -27,7 +27,7 @@ data MurexData = MurexUnit
 --               | MurexChan Chan
 --               | MurexHandle Handle
 --               | MurexHandler TODO
-
+    deriving (Eq)
 
 ------ Logic ------
 notBool (MurexBool a) = MurexBool $ not a

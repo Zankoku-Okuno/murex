@@ -25,8 +25,8 @@ main = do
 murexConst = Lambda [intern "x", intern "y"] (Var $ intern "x")
 murexIgnore = Lambda [intern "x", intern "y"] (Var $ intern "y")
 
-normalTest = "'a'\n\
+normalTest = "'a' ()\n\
              \   lambda\n\
              \   `body `1\n\
              \3/5"
-indentTest = "\n \n#hi\n (\\\n\n)\n      \n  ()\n ()\n#asgf"
+indentTest = "\n \n#hi\n (\\\n\n)\n      \n  \\\\\n    ()\n ()\n#asgf"

@@ -9,4 +9,4 @@ Lexer
 		for this, I need to track at least paren depth, probably general enclosement depth
 	literate files
 	unicodizing
-	sanity checking/unit testing
+	unit testing
