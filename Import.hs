@@ -1,5 +1,6 @@
 module Import (
       module X
+    , chr, ord, digitToInt
     , Text, pack, unpack
     , AList
     , SourcePos, Pos
@@ -16,6 +17,7 @@ import Control.Monad as X
 import Control.Monad.Trans.Class as X
 import Control.Monad.IO.Class as X
 
+import Data.Char (chr, ord, digitToInt)
 import Data.Text (Text, pack, unpack)
 import Text.Parsec (SourcePos)
 

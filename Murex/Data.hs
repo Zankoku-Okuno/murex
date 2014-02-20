@@ -10,7 +10,7 @@ import qualified Data.Sequence as S
 data MurexData = MurexUnit
                | MurexBool Bool
                | MurexNum Rational
---               | MurexInf | MurexNegZ | MurexNegInf | MurexNaN
+               | MurexInf | MurexNegZ | MurexNegInf | MurexNaN
 --               | MurexNat Natural --package: natural-numbers
 --               | MurexInt Integer
 --               | MurexRat Rational
@@ -166,4 +166,7 @@ fromMurexChar :: MurexData -> Char
 fromMurexChar (MurexChar c) = c
 toMurexChar :: Char -> MurexData
 toMurexChar c = MurexChar c
+
+toMurexString :: String -> MurexData
+toMurexString = MurexSeq . S.fromList . map MurexChar
 

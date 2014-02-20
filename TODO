@@ -1,0 +1,12 @@
+TODO -- a list of general things I left out so I could get a working system quickly
+
+Primitives
+	all kinds of operations
+		when I get to this, I should have some sort of code generator
+		it can generate all the code to link up the interpreter/compiler with the implementation
+Lexer
+	string interpolation
+		for this, I need to track at least paren depth, probably general enclosement depth
+	literate files
+	unicodizing
+	sanity checking/unit testing

@@ -12,7 +12,7 @@ goodbye = putStrLn "Goodbyte, cruel world!"
 
 main = do
     hello
-    case Lex.runLexer "demo" "\n \n#hi\n (\\\n\n)\n      \n  ()\n ()\n#asgf" of
+    case Lex.runLexer "demo" normalTest of
         Left err -> print err
         Right val -> print (map snd val)
     --interpret $ Apply [Var (intern "putStr"),
@@ -24,3 +24,9 @@ main = do
 
 murexConst = Lambda [intern "x", intern "y"] (Var $ intern "x")
 murexIgnore = Lambda [intern "x", intern "y"] (Var $ intern "y")
+
+normalTest = "'a'\n\
+             \   lambda\n\
+             \   `body `1\n\
+             \3/5"
+indentTest = "\n \n#hi\n (\\\n\n)\n      \n  ()\n ()\n#asgf"
