@@ -20,6 +20,7 @@ main = do
         trees <- case Par.runParser tokens of
             Left err -> liftIO (print err) >> left ()
             Right trees -> void $ liftIO $ mapM_ print trees
+        return ()
     --interpret $ Apply [Var (intern "putStr"),
     --                Apply [Var (intern "snoc"),
     --                    Apply [Var (intern "getStr"), Literal MurexUnit],

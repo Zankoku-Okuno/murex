@@ -1,0 +1,5 @@
+module Enum {type t}
+   minVal :: t
+   maxVal :: Maybe t
+   succ :: t -> Maybe t
+   prev :: t -> Maybe t
