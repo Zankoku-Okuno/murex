@@ -13,9 +13,13 @@ goodbye = putStrLn "Goodbyte, cruel world!"
 
 main = do
     hello
-    case Lex.runLexer "demo" normalTest of
-        Left err -> print err
-        Right val -> print (map snd val)
+    runEitherT $ do
+        tokens <- case Lex.runLexer "demo" normalTest of
+            Left err -> left () <* liftIO (print err)
+            Right tokens -> return tokens <* liftIO (print $ map snd tokens)
+        trees <- case Par.runParser tokens of
+            Left err -> liftIO (print err) >> left ()
+            Right trees -> void $ liftIO $ mapM_ print trees
     --interpret $ Apply [Var (intern "putStr"),
     --                Apply [Var (intern "snoc"),
     --                    Apply [Var (intern "getStr"), Literal MurexUnit],
@@ -30,5 +34,5 @@ normalTest = "'a' ()\n\
              \   lambda\n\
              \   `body `1\n\
              \3/5\n\
-             \a.b.c"
+             \.(@`foo a.b.c)"
 indentTest = "\n \n#hi\n (\\\n\n)\n      \n  \\\\\n    ()\n ()\n#asgf"

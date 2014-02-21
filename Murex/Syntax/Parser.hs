@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 module Murex.Syntax.Parser where
 
 import Import
@@ -19,14 +20,14 @@ data Atom = Literal MurexData
           | Name [String]
           | Label (Either Integer String)
           | Prim Primitive
-    deriving (Eq, Show) --TODO custom show
+    deriving (Eq)
           
 data Primitive = List | Nil
                | Xons | Xil
                | At | Ellipsis
                | InfixDot
                | Interpolate
-    deriving (Eq, Show) --TODO custom show
+    deriving (Eq)
 
 runParser :: [Pos Token] -> Either ParseError [Quasihexpr (Pos Atom)]
 runParser input = P.runParser murex () "" input
@@ -127,6 +128,29 @@ withPos p = (,) <$> getPosition <*> p
 
 leaf :: (a -> Atom) -> Parser a -> Parser Tree
 leaf f p = individual <$> withPos (f <$> p)
+
+
+------ Show ------
+instance Show Atom where
+    show (Literal x) = show x
+    show (Name parts) = intercalate "." parts
+    show (Label (Left i)) = '`':show i
+    show (Label (Right name)) = '`':name
+    show (Prim x) = show x
+instance Show Primitive where
+    show List = "#list"
+    show Nil = "#nil"
+    show Xons = "#xons"
+    show Xil = "#xil"
+    show At = "@"
+    show Ellipsis = ".."
+    show Interpolate = "#str"
+
+instance Show (Quasihexpr (Pos Atom)) where
+    show (QLeaf x) = show (snd x)
+    show (QBranch [QLeaf (_, Prim InfixDot), expr]) = '.':show expr
+    show (QBranch xs) = "(" ++ intercalate " " (map show xs) ++ ")"
+    --TODO show quotation
 
 
 

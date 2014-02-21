@@ -16,6 +16,7 @@ import Control.Applicative as X
 import Control.Monad as X
 import Control.Monad.Trans.Class as X
 import Control.Monad.IO.Class as X
+import Control.Monad.Either as X
 
 import Data.Char (chr, ord, digitToInt)
 import Data.Text (Text, pack, unpack)
