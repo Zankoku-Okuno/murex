@@ -257,7 +257,7 @@ instance Show Token where
     show Quasiquote = "`⌜'"
     show Unquote = "`⌞'"
     show Splice = "`⌟'"
-    show (Name name) = "identifier (" ++ name ++ ")"
+    show (Name name) = "name (" ++ name ++ ")"
     show (Label (Left i)) = "label (" ++ show i ++ ")"
     show (Label (Right name)) = "label (" ++ name ++ ")"
     show (Literal MurexUnit) = "literal (unit)"

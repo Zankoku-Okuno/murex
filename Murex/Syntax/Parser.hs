@@ -14,7 +14,6 @@ import Text.Parsec ( Parsec, SourcePos, ParseError, tokenPrim, getPosition, (<?>
                    , choice, parserZero, eof)
 
 type Parser = Parsec [Pos Token] ()
-type Tree = Quasihexpr (Pos Atom)
 
 data Atom = Literal MurexData
           | Name [String]
@@ -29,10 +28,10 @@ data Primitive = List | Nil
                | Interpolate
     deriving (Eq)
 
-runParser :: [Pos Token] -> Either ParseError [Quasihexpr (Pos Atom)]
+runParser :: [Pos Token] -> Either ParseError [Quasihexpr SourcePos Atom]
 runParser input = P.runParser murex () "" input
 
-murex :: Parser [Tree]
+murex :: Parser [Quasihexpr SourcePos Atom]
 murex = do
     P.getInput >>= \input -> case input of { [] -> return (); (x:xs) -> P.setPosition (fst x) }
     res <- bareNode `sepBy` token Lex.Newline
@@ -41,10 +40,11 @@ murex = do
 
 
 ------ Core Combinators ------
-bareNode :: Parser Tree
-bareNode = quasinode <$> many1 (atom <|> expression)
+fullyBareNode :: Parser [Quasihexpr SourcePos Atom]
+fullyBareNode = many1 (atom <|> expression)
+bareNode = adjoinsPos <$> fullyBareNode
 
-atom :: Parser Tree
+atom :: Parser (Quasihexpr SourcePos Atom)
 atom = (<?> "atom") $ choice [ longId
                              , leaf Label labelToken
                              , leaf Literal literalToken
@@ -56,7 +56,7 @@ atom = (<?> "atom") $ choice [ longId
                          , leaf (const $ Prim Ellipsis) (token Lex.Ellipsis)
                          ]
 
-expression :: Parser Tree
+expression :: Parser (Quasihexpr SourcePos Atom)
 expression = choice [ parens
                     , indent
                     , list
@@ -65,28 +65,31 @@ expression = choice [ parens
                     , infixDot
                     ]
     where
-    parens = between (token Lex.OpenParen) (token Lex.CloseParen) bareNode
-    indent = quasinode <$> between (token Lex.Indent) (token Lex.Dedent) (bareNode `sepBy1` token Lex.Newline)
+    parens = do
+        pos0 <- getPosition
+        res <- between (token Lex.OpenParen) (token Lex.CloseParen) fullyBareNode
+        return $ adjoins pos0 res
+    indent = adjoinsPos <$> between (token Lex.Indent) (token Lex.Dedent) (bareNode `sepBy1` token Lex.Newline)
     list = do
         pos0 <- getPosition
         token Lex.OpenBrack
         res <- bareNode `sepEndBy` token Lex.Comma
         token Lex.CloseBrack
-        let list = individual (pos0, Prim List)
-            nil  = individual (pos0, Prim Nil)
-        return $ list `adjoin` (nil `adjoinsl` res)
+        let list = individual pos0 (Prim List)
+            nil  = individual pos0 (Prim Nil)
+        return $ list `adjoinPos` (nil `adjoinslPos` res)
     xons = do
         pos0 <- getPosition
         token Lex.OpenBrace
         res <- bareNode `sepEndBy` token Lex.Comma
         token Lex.CloseBrace
-        let xons = individual (pos0, Prim Xons)
-            xil  = individual (pos0, Prim Xil)
-        return $ xons `adjoin` (xil `adjoinsl` res)
+        let xons = individual pos0 (Prim Xons)
+            xil = individual pos0 (Prim Xil)
+        return $ xons `adjoinPos` (xil `adjoinslPos` res)
     infixDot = do
         dot <- leaf (const $ Prim InfixDot) (token Lex.Dot)
         expr <- atom <|> parens
-        return $ dot `adjoin` expr
+        return $ dot `adjoinPos` expr
 
 
 ------ Primitives ------
@@ -123,11 +126,8 @@ satisfy p = tokenPrim show updatePos testToken
 
 
 ------ Helpers ------
-withPos :: Parser a -> Parser (Pos a)
-withPos p = (,) <$> getPosition <*> p
-
-leaf :: (a -> Atom) -> Parser a -> Parser Tree
-leaf f p = individual <$> withPos (f <$> p)
+leaf :: (a -> Atom) -> Parser a -> Parser (Quasihexpr SourcePos Atom)
+leaf f p = individual <$> getPosition <*> (f <$> p)
 
 
 ------ Show ------
@@ -146,10 +146,10 @@ instance Show Primitive where
     show Ellipsis = ".."
     show Interpolate = "#str"
 
-instance Show (Quasihexpr (Pos Atom)) where
-    show (QLeaf x) = show (snd x)
-    show (QBranch [QLeaf (_, Prim InfixDot), expr]) = '.':show expr
-    show (QBranch xs) = "(" ++ intercalate " " (map show xs) ++ ")"
+instance Show (Quasihexpr SourcePos Atom) where
+    show (QLeaf _ x) = show x
+    show (QBranch _ [QLeaf _ (Prim InfixDot), expr]) = '.':show expr
+    show (QBranch _ xs) = "(" ++ intercalate " " (map show xs) ++ ")"
     --TODO show quotation
 
 
