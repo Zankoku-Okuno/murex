@@ -22,6 +22,7 @@ type Lexer = Parsec String [Maybe Int]
 data Token = Space
            | Indent | Newline | Dedent | OpenParen | CloseParen
            | OpenBrack | CloseBrack | OpenBrace | CloseBrace
+           | OpenInterp String | CloseInterp String
            | Dot | Comma | Ellipsis | At
            | Quote | Quasiquote | Unquote | Splice
            | Name String | Label (Either Integer String)
@@ -100,6 +101,7 @@ postprocess input = go input
     stripSpaces = filter ((/= Space) . snd) input
 
 
+------ Core Combinators ------
 whitespace :: Lexer (Pos Token)
 whitespace = withPos (const Space <$> many1 space)
 

@@ -3,7 +3,7 @@ module Import (
     , chr, ord, digitToInt
     , Text, pack, unpack
     , AList
-    , SourcePos, Pos
+    , SourcePos, Pos, SourcePos'(..), Pos'
     ) where
 
 import Data.Maybe as X
@@ -24,3 +24,9 @@ import Text.Parsec (SourcePos)
 type AList k v = [(k, v)]
 
 type Pos a = (SourcePos, a)
+data SourcePos' = SimplePos SourcePos
+                | ImplicitPos
+type Pos' a = (SourcePos', a)
+instance Show SourcePos' where
+	show (SimplePos pos) = show pos
+	show _ = error "TODO: show my SourcePos"

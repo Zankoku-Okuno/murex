@@ -1,0 +1,25 @@
+I see a lot of crap about how "scannerless parsers are so awesome," but it's total bull. I used a scannerful parser here.
+
+Advantages:
+	* simplicity
+	* modularity
+	* efficiency
+	* token stream is accessible (for colorizers, debugging, &c)
+	* parser has a clean input domain
+
+Parsec-specific advantages:
+	* try is rarely needed at the parser level
+	* easier to build grammars that need complex lookahead
+
+Supposed advantages/disadvantages:
+	* only one metasyntax needed -- well, I'm using parsec to build both the lexer and parser, os counterexample incoming
+	* bad error messages -- just use your library correctly, your diagnostics may even be more readable
+	* can't parse multiple languages in one file -- no problem if you use parsec, or have a state machine
+	* can't use common string parsers -- didn't you already do that in the lexer?
+
+Real disadvantages:
+	* A little extra boilerplate
+
+Seems like the advantages win by a landslide. In particular, simplicity is a big win.
+
+Admittedly, if you're of the opinion (roughly) that a lexer does regexes and a parser does CFGs, then my definitions are a little wonky (namely, that lexing obtains lexemes and parsing deals with nesting structures). Then again, if you think Parsec is for parsing, then obviously parsers aren't for CFGs (Parsec, being a monad, can handle recursively enumerable grammars).

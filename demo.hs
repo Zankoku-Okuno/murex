@@ -1,6 +1,7 @@
 import Import
 import Murex.Interpreter
 import qualified Murex.Syntax.Lexer as Lex
+import qualified Murex.Syntax.Parser as Par
 
 import qualified Data.Sequence as S
 import Murex.Data
@@ -28,5 +29,6 @@ murexIgnore = Lambda [intern "x", intern "y"] (Var $ intern "y")
 normalTest = "'a' ()\n\
              \   lambda\n\
              \   `body `1\n\
-             \3/5"
+             \3/5\n\
+             \a.b.c"
 indentTest = "\n \n#hi\n (\\\n\n)\n      \n  \\\\\n    ()\n ()\n#asgf"

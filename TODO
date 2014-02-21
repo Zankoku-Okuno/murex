@@ -1,5 +1,9 @@
 TODO -- a list of general things I left out so I could get a working system quickly
 
+The Language in general
+	indentation inside parenthesis
+
+
 Primitives
 	all kinds of operations
 		when I get to this, I should have some sort of code generator
