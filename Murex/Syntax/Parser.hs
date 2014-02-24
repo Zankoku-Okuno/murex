@@ -1,5 +1,9 @@
 {-# LANGUAGE FlexibleInstances #-}
-module Murex.Syntax.Parser where
+module Murex.Syntax.Parser (
+      Atom(..)
+    , Primitive(..)
+    , runParser
+    ) where
 
 import Import
 import Murex.Data
@@ -145,6 +149,11 @@ instance Show Primitive where
     show At = "@"
     show Ellipsis = ".."
     show Interpolate = "#str"
+
+instance Show (Hexpr SourcePos Atom) where
+    show (Leaf _ x) = show x
+    show (Branch _ [Leaf _ (Prim InfixDot), expr]) = '.':show expr
+    show (Branch _ xs) = "(" ++ intercalate " " (map show xs) ++ ")"
 
 instance Show (Quasihexpr SourcePos Atom) where
     show (QLeaf _ x) = show x
