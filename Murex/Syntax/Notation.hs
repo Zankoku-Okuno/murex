@@ -7,7 +7,7 @@ import Language.Distfix
 import Control.Monad.Errors
 import qualified Text.Parsec as P
 import Text.Parsec (Parsec, ParseError, SourcePos, token)
-import Murex.Syntax.Parser
+import Murex.Parser
 
 data NotationConfig = Use    SourcePos String
                     | Define SourcePos String [DistfixLevel]

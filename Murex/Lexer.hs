@@ -1,4 +1,4 @@
-module Murex.Syntax.Lexer (
+module Murex.Lexer (
       runLexer
     , Token (..)
     ) where

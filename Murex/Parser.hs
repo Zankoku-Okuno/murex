@@ -1,5 +1,4 @@
-{-# LANGUAGE FlexibleInstances #-}
-module Murex.Syntax.Parser (
+module Murex.Parser (
       Atom(..)
     , Primitive(..)
     , runParser
@@ -7,8 +6,9 @@ module Murex.Syntax.Parser (
 
 import Import
 import Murex.Data
-import Murex.Syntax.Lexer (Token)
-import qualified Murex.Syntax.Lexer as Lex
+import Murex.Syntax.Concrete
+import Murex.Lexer (Token)
+import qualified Murex.Lexer as Lex
 import Data.Hierarchy
 import Data.Hexpr
 
@@ -17,20 +17,8 @@ import Text.Parsec ( Parsec, SourcePos, ParseError, tokenPrim, getPosition, (<?>
                    , between, many1, sepBy, sepEndBy, sepBy1
                    , choice, parserZero, eof)
 
-type Parser = Parsec [Pos Token] ()
 
-data Atom = Literal MurexData
-          | Name [String]
-          | Label (Either Integer String)
-          | Prim Primitive
-    deriving (Eq)
-          
-data Primitive = List | Nil
-               | Xons | Xil
-               | At | Ellipsis
-               | InfixDot
-               | Interpolate
-    deriving (Eq)
+type Parser = Parsec [Pos Token] ()
 
 runParser :: [Pos Token] -> Either ParseError [Quasihexpr SourcePos Atom]
 runParser input = P.runParser murex () "" input
@@ -132,34 +120,6 @@ satisfy p = tokenPrim show updatePos testToken
 ------ Helpers ------
 leaf :: (a -> Atom) -> Parser a -> Parser (Quasihexpr SourcePos Atom)
 leaf f p = individual <$> getPosition <*> (f <$> p)
-
-
------- Show ------
-instance Show Atom where
-    show (Literal x) = show x
-    show (Name parts) = intercalate "." parts
-    show (Label (Left i)) = '`':show i
-    show (Label (Right name)) = '`':name
-    show (Prim x) = show x
-instance Show Primitive where
-    show List = "#list"
-    show Nil = "#nil"
-    show Xons = "#xons"
-    show Xil = "#xil"
-    show At = "@"
-    show Ellipsis = ".."
-    show Interpolate = "#str"
-
-instance Show (Hexpr SourcePos Atom) where
-    show (Leaf _ x) = show x
-    show (Branch _ [Leaf _ (Prim InfixDot), expr]) = '.':show expr
-    show (Branch _ xs) = "(" ++ intercalate " " (map show xs) ++ ")"
-
-instance Show (Quasihexpr SourcePos Atom) where
-    show (QLeaf _ x) = show x
-    show (QBranch _ [QLeaf _ (Prim InfixDot), expr]) = '.':show expr
-    show (QBranch _ xs) = "(" ++ intercalate " " (map show xs) ++ ")"
-    --TODO show quotation
 
 
 

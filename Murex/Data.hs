@@ -159,6 +159,7 @@ data Builtin = PutChr | GetChr
              | SeqLen | SeqIx | SeqSet
              | Cons | Snoc | Cat
              | Head | Tail | Init | Last
+    deriving (Show, Eq)
 
 
 ------ Murex <-> Haskell ------

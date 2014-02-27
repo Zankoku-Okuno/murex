@@ -1,9 +1,11 @@
 import Import
 import Murex.Interpreter
 import Control.Monad.Errors
-import qualified Murex.Syntax.Lexer as Lex
-import qualified Murex.Syntax.Parser as Par
+import qualified Murex.Lexer as Lex
+import qualified Murex.Parser as Par
 import qualified Murex.Syntax.Notation as Notation
+import qualified Murex.Syntax.Desugar as Desugar
+import qualified Murex.Syntax.Concrete as Concrete
 
 import qualified Data.Sequence as S
 import Murex.Data
@@ -17,26 +19,34 @@ main = do
     hello
     runEitherT $ do
         sep
-        tokens <- case Lex.runLexer "demo" normalTest of
-            Left err -> left () <* liftIO (print err)
+        tokens <- case Lex.runLexer "demo" interpTest of
+            Left err -> liftIO (print err) *> left()
             Right tokens -> return tokens
         liftIO $ print $ map snd tokens
         sep
         trees <- case Par.runParser tokens of
-            Left err -> left () <* liftIO (print err)
+            Left err -> liftIO (print err) *> left()
             Right val -> return val
         (notation, raw) <- case runErrors (Notation.extractNotation trees) of
-            Left errs -> left () <* liftIO (mapM_ print errs)
+            Left errs -> liftIO (mapM_ print errs) *> left()
             Right val -> return val
         liftIO $ mapM_ print notation
         sep
-        liftIO $ mapM_ print raw
+        desugared <- case Desugar.desugar notation (head raw) of
+            Left err -> liftIO (print err) *> left()
+            Right val -> return val
+        liftIO $ print desugared
+        sep
+        let asts = Concrete.toAST desugared
+        liftIO $ print asts
+        sep
+        results <- liftIO $ interpret asts
+        liftIO $ print results
         sep
     --interpret $ Apply [Var (intern "putStr"),
     --                Apply [Var (intern "snoc"),
     --                    Apply [Var (intern "getStr"), Literal MurexUnit],
     --                    Literal (MurexChar '\n')]]
-    --print =<< interpret (Apply [Apply [murexIgnore, Literal (MurexNum (1%1))], Literal (MurexNum (2%1))])
     goodbye
     where
     sep = liftIO $ putStrLn (replicate 36 '=')
@@ -44,7 +54,8 @@ main = do
 murexConst = Lambda [intern "x", intern "y"] (Var $ intern "x")
 murexIgnore = Lambda [intern "x", intern "y"] (Var $ intern "y")
 
-normalTest = "'a' ()\n\
+interpTest = "(λ (f x) f (f x)) (λ x addNum x x) 3"
+tokenTest = "'a' ()\n\
              \   lambda\n\
              \   `body `1\n\
              \3/5\n\

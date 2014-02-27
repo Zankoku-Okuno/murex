@@ -8,3 +8,4 @@ data AST = Literal MurexData
          | Lambda [Symbol] AST
          | Apply [AST]
          | Builtin Builtin
+    deriving (Show)
