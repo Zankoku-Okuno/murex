@@ -59,8 +59,23 @@ expression = choice [ parens
     where
     parens = do
         pos0 <- getPosition
-        res <- between (token Lex.OpenParen) (token Lex.CloseParen) fullyBareNode
-        return $ adjoins pos0 res
+        token Lex.OpenParen
+        res0 <- adjoins pos0 <$> fullyBareNode
+        rest <- P.option [] $ do
+            P.lookAhead (token Lex.Comma)
+            res <- many1 commaExpr
+            optional (token Lex.Comma)
+            return res
+        token Lex.CloseParen
+        return $ case rest of
+            [] -> res0
+            _ -> individual pos0 (Prim Tuple) `adjoinslPos` (res0:rest)
+        where
+        commaExpr = do
+            pos0 <- getPosition
+            token Lex.Comma
+            adjoins pos0 <$> fullyBareNode
+
     indent = adjoinsPos <$> between (token Lex.Indent) (token Lex.Dedent) (bareNode `sepBy1` token Lex.Newline)
     list = do
         pos0 <- getPosition
@@ -69,7 +84,7 @@ expression = choice [ parens
         token Lex.CloseBrack
         let list = individual pos0 (Prim List)
             nil  = individual pos0 (Prim Nil)
-        return $ list `adjoinPos` (nil `adjoinslPos` res)
+        return $ list `adjoinslPos` (nil:res)
     xons = do
         pos0 <- getPosition
         token Lex.OpenBrace
@@ -77,7 +92,7 @@ expression = choice [ parens
         token Lex.CloseBrace
         let xons = individual pos0 (Prim Xons)
             xil = individual pos0 (Prim Xil)
-        return $ xons `adjoinPos` (xil `adjoinslPos` res)
+        return $ xons `adjoinslPos` (xil:res)
     infixDot = do
         dot <- leaf (const $ Prim InfixDot) (token Lex.Dot)
         expr <- atom <|> parens

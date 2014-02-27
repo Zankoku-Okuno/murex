@@ -180,7 +180,9 @@ literal = withPos $ Literal <$> choice [ unitLit
     unitLit = const MurexUnit <$> string "()"
     numLit = MurexNum <$> anyNumber
     charLit = (<?> "character") $ MurexChar <$> between2 (char '\'') literalChar
-    strLit = (<?> "string") $ try $ toMurexString <$> between2 (char '\"') (catMaybes <$> many maybeLiteralChar)
+    strLit = (<?> "string") $ try $ toMurexString <$> between2 (char '\"') (catMaybes <$> many strChar)
+        where
+        strChar = maybeLiteralChar <|> (Just <$> char '\n')
     --TODO string interpolation: needs nesting stack
 
 comment :: Lexer ()

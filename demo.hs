@@ -17,9 +17,12 @@ goodbye = putStrLn "Goodbyte, cruel world!"
 
 main = do
     hello
+    let input = interpTest
     runEitherT $ do
         sep
-        tokens <- case Lex.runLexer "demo" interpTest of
+        liftIO $ putStrLn input
+        sep
+        tokens <- case Lex.runLexer "demo" input of
             Left err -> liftIO (print err) *> left()
             Right tokens -> return tokens
         liftIO $ print $ map snd tokens
@@ -43,10 +46,6 @@ main = do
         results <- liftIO $ interpret asts
         liftIO $ print results
         sep
-    --interpret $ Apply [Var (intern "putStr"),
-    --                Apply [Var (intern "snoc"),
-    --                    Apply [Var (intern "getStr"), Literal MurexUnit],
-    --                    Literal (MurexChar '\n')]]
     goodbye
     where
     sep = liftIO $ putStrLn (replicate 36 '=')
@@ -55,6 +54,7 @@ murexConst = Lambda [intern "x", intern "y"] (Var $ intern "x")
 murexIgnore = Lambda [intern "x", intern "y"] (Var $ intern "y")
 
 interpTest = "(λ (f x) f (f x)) (λ x addNum x x) 3"
+echoTest = "putStr\n   snoc (getStr ()) '\\n'"
 tokenTest = "'a' ()\n\
              \   lambda\n\
              \   `body `1\n\
