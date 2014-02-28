@@ -24,7 +24,7 @@ data Primitive = List | Nil
                | At | Ellipsis
                | InfixDot
                | Interpolate
-               | Block
+               | TopLevel
     deriving (Eq)
 
 type Tree = Quasihexpr SourcePos Atom
@@ -38,8 +38,8 @@ toAST (QBranch p (QLeaf _ (Kw Lambda) : QLeaf _ (Name [name]) : body)) = A.Lambd
 toAST (QBranch p (QLeaf _ (Kw Lambda) : QBranch _ names : body)) = A.Lambda (transName <$> names) (toAST (adjoins p body))
     where
     transName (QLeaf _ (Name [name])) = intern name
-toAST (QBranch _ [QLeaf _ (Prim Block), x]) = toAST x
-toAST (QBranch _ (QLeaf _ (Prim Block) : xs)) = A.Block (toAST <$> xs)
+toAST (QBranch _ [QLeaf _ (Prim TopLevel), x]) = toAST x
+toAST (QBranch _ (QLeaf _ (Prim TopLevel) : xs)) = A.Block (toAST <$> xs)
 toAST (QBranch _ xs) = A.Apply (toAST <$> xs)
 
 
@@ -59,7 +59,7 @@ instance Show Primitive where
     show At = "@"
     show Ellipsis = ".."
     show Interpolate = "#str"
-    show Block = "#block"
+    show TopLevel = "#top-level"
 instance Show Keyword where
   show Lambda = "\955"
 

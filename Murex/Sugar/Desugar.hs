@@ -4,6 +4,7 @@ import Import
 import Murex.Sugar
 import Data.Hierarchy
 import Data.Hexpr
+import Language.Desugar
 import Murex.Syntax.Concrete
 import Murex.Sugar.Notation
 import Control.Monad.Errors
@@ -11,16 +12,8 @@ import Text.Parsec (ParseError)
 import qualified Text.Parsec as P
 
 desugar :: [NotationConfig] -> Tree -> Either [ParseError] Tree
-desugar notation input = runDesugar anyNode $ transKw defaultKeywords input
+desugar notation input = runDesugar anyNode $ implicitParens $ transKw defaultKeywords input
 
-{-
-What I need is to input a tree.
-    Perform some desugaring at that node.
-    Validate, on fail return just the desugared node.
-    Successful validation desugars underneath and returns the tree.
-    Desugaring does not muck with positioning of existing structures.
-I think what I need is a ParsecT [Tree] () (Errors [ParseError]) Tree
--}
 
 expression :: Desugar Tree
 expression = subNode $ P.choice [ block
@@ -36,7 +29,7 @@ binder = subNode $ (:[]) <$> shortId
 --FIXME accept more than only expressions
 block :: Desugar [Tree]
 block = do
-    block <- leaf (Prim Block)
+    block <- leaf (Prim TopLevel) -- <|> leaf (Prim Block)
     body <- P.many1 expression
     return (block:body)
 
@@ -63,3 +56,10 @@ transKw config = postorder (go, id)
 defaultKeywords :: AList String Keyword
 defaultKeywords = [ ("λ", Lambda)
                   ]
+
+------ Parens ------
+implicitParens :: Tree -> Tree
+implicitParens = addParens isLambda
+    where
+    isLambda (QLeaf _ (Kw Lambda)) = True
+    isLambda _ = False

@@ -10,7 +10,7 @@ import qualified Data.Char as C
 import Text.Parsec ( Parsec, ParseError, SourceName, runParser
                    , parserZero, anyChar, satisfy, char, eof, oneOf
                    , try, (<?>), many1, between
-                   , getPosition, getState, modifyState)
+                   , getPosition, getState)
 import qualified Text.Parsec as P
 import Text.Parsec.Error
 import Language.Parse
@@ -180,7 +180,7 @@ literal = withPos $ Literal <$> choice [ unitLit
     unitLit = const MurexUnit <$> string "()"
     numLit = MurexNum <$> anyNumber
     charLit = (<?> "character") $ MurexChar <$> between2 (char '\'') literalChar
-    strLit = (<?> "string") $ try $ toMurexString <$> between2 (char '\"') (catMaybes <$> many strChar)
+    strLit = (<?> "string") $ toMurexString . catMaybes <$> between2 (char '\"') (many strChar)
         where
         strChar = maybeLiteralChar <|> (Just <$> char '\n')
     --TODO string interpolation: needs nesting stack
@@ -209,15 +209,15 @@ withPos :: Lexer a -> Lexer (Pos a)
 withPos lexer = (,) <$> getPosition <*> try lexer
 
 push :: Int -> Lexer ()
-push n = modifyState (Just n:)
+push n = modifyState' (Just n:)
 peek :: Lexer (Maybe Int)
 peek = head <$> getState
 pop :: Lexer ()
-pop = maybe parserZero (const $ modifyState tail) =<< peek
+pop = maybe parserZero (const $ modifyState' tail) =<< peek
 disable :: Lexer ()
-disable = modifyState (Nothing:)
+disable = modifyState' (Nothing:)
 popDisable :: Lexer ()
-popDisable = maybe (modifyState tail) (const parserZero) =<< peek
+popDisable = maybe (modifyState' tail) (const parserZero) =<< peek
 
 stackNull :: Lexer Bool
 stackNull = null <$> getState
@@ -271,6 +271,8 @@ skipBlankLines = (<?> "whitespace") $ maybe (return ()) (const go) =<< peek
 
 simpleNewline :: Lexer ()
 simpleNewline = void (char '\n' <?> "newline")
+
+modifyState' f = (P.putState $!) =<< f <$> P.getState
 
 
 

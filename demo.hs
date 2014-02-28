@@ -22,7 +22,7 @@ main = do
         sep
         liftIO $ putStrLn input
         sep
-        tokens <- case Lex.runLexer "demo" tinyTest of
+        tokens <- case Lex.runLexer "demo" input of
             Left err -> liftIO (print err) *> left()
             Right tokens -> return tokens
         liftIO $ print $ map snd tokens
@@ -53,11 +53,11 @@ main = do
 murexConst = Lambda [intern "x", intern "y"] (Var $ intern "x")
 murexIgnore = Lambda [intern "x", intern "y"] (Var $ intern "y")
 
-tinyTest = "3"
+tinyTest = "\"\""
+lambdaParenTest = "addNum 3 λ x x"
 interpTest = "putStr \">\"\n\
              \putStr\n   snoc (getStr ()) '\\n'\n\
              \(λ (f x) f (f x)) (λ x addNum x x) 3"
-echoTest = ""
 tokenTest = "'a' ()\n\
              \   lambda\n\
              \   `body `1\n\

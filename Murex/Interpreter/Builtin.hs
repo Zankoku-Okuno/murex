@@ -3,6 +3,7 @@ module Murex.Interpreter.Builtin where
 import Import
 import qualified Data.Sequence as S
 import Data.Foldable (toList)
+import System.IO
 import Murex.Data
 import Murex.Interpreter.Values
 import Murex.Syntax.Typeless
@@ -12,6 +13,7 @@ runBuiltin PutChr [Data (MurexChar c)] = putChar c >> return (Data MurexUnit)
 runBuiltin GetChr [] = Data . MurexChar <$> getChar
 runBuiltin PutStr [Data (MurexSeq str)] = do
     putStr $ map fromMurexChar (toList str)
+    hFlush stdout
     return $ Data MurexUnit
 runBuiltin GetStr [] = Data . MurexSeq . S.fromList . map toMurexChar <$> getLine
 
