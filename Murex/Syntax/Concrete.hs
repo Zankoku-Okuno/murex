@@ -17,24 +17,29 @@ data Atom = Literal MurexData
     deriving (Eq)
 
 data Keyword = Lambda
-	deriving (Eq)
+  deriving (Eq)
 data Primitive = List | Nil
                | Xons | Xil
                | Tuple
                | At | Ellipsis
                | InfixDot
                | Interpolate
+               | Block
     deriving (Eq)
+
+type Tree = Quasihexpr SourcePos Atom
 
 
 --FIXME DELME
-toAST :: Quasihexpr a Atom -> A.AST
+toAST :: Tree -> A.AST
 toAST (QLeaf _ (Literal x)) = A.Literal x
 toAST (QLeaf _ (Name [name])) = A.Var (intern name)
 toAST (QBranch p (QLeaf _ (Kw Lambda) : QLeaf _ (Name [name]) : body)) = A.Lambda [intern name] (toAST (adjoins p body))
 toAST (QBranch p (QLeaf _ (Kw Lambda) : QBranch _ names : body)) = A.Lambda (transName <$> names) (toAST (adjoins p body))
-	where
-	transName (QLeaf _ (Name [name])) = intern name
+    where
+    transName (QLeaf _ (Name [name])) = intern name
+toAST (QBranch _ [QLeaf _ (Prim Block), x]) = toAST x
+toAST (QBranch _ (QLeaf _ (Prim Block) : xs)) = A.Block (toAST <$> xs)
 toAST (QBranch _ xs) = A.Apply (toAST <$> xs)
 
 
@@ -54,8 +59,9 @@ instance Show Primitive where
     show At = "@"
     show Ellipsis = ".."
     show Interpolate = "#str"
+    show Block = "#block"
 instance Show Keyword where
-	show Lambda = "\955"
+  show Lambda = "\955"
 
 instance Show (Hexpr SourcePos Atom) where
     show (Leaf _ x) = show x

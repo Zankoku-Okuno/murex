@@ -20,10 +20,10 @@ import Text.Parsec ( Parsec, SourcePos, ParseError, tokenPrim, getPosition, (<?>
 
 type Parser = Parsec [Pos Token] ()
 
-runParser :: [Pos Token] -> Either ParseError [Quasihexpr SourcePos Atom]
+runParser :: [Pos Token] -> Either ParseError [Tree]
 runParser input = P.runParser murex () "" input
 
-murex :: Parser [Quasihexpr SourcePos Atom]
+murex :: Parser [Tree]
 murex = do
     P.getInput >>= \input -> case input of { [] -> return (); (x:xs) -> P.setPosition (fst x) }
     res <- bareNode `sepBy` token Lex.Newline
@@ -32,11 +32,11 @@ murex = do
 
 
 ------ Core Combinators ------
-fullyBareNode :: Parser [Quasihexpr SourcePos Atom]
+fullyBareNode :: Parser [Tree]
 fullyBareNode = many1 (atom <|> expression)
 bareNode = adjoinsPos <$> fullyBareNode
 
-atom :: Parser (Quasihexpr SourcePos Atom)
+atom :: Parser (Tree)
 atom = (<?> "atom") $ choice [ longId
                              , leaf Label labelToken
                              , leaf Literal literalToken
@@ -48,7 +48,7 @@ atom = (<?> "atom") $ choice [ longId
                          , leaf (const $ Prim Ellipsis) (token Lex.Ellipsis)
                          ]
 
-expression :: Parser (Quasihexpr SourcePos Atom)
+expression :: Parser (Tree)
 expression = choice [ parens
                     , indent
                     , list
@@ -133,7 +133,7 @@ satisfy p = tokenPrim show updatePos testToken
 
 
 ------ Helpers ------
-leaf :: (a -> Atom) -> Parser a -> Parser (Quasihexpr SourcePos Atom)
+leaf :: (a -> Atom) -> Parser a -> Parser (Tree)
 leaf f p = individual <$> getPosition <*> (f <$> p)
 
 

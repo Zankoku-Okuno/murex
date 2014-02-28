@@ -2,6 +2,7 @@ TODO -- a list of general things I left out so I could get a working system quic
 
 The Language in general
 	indentation inside parenthesis
+	instantiate a module with parameters in a long id
 
 
 Primitives
@@ -14,3 +15,6 @@ Lexer
 	literate files
 	unicodizing
 	unit testing
+
+Sugar
+	override the spellings of keywords

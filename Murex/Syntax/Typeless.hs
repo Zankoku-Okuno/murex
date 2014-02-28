@@ -7,5 +7,6 @@ data AST = Literal MurexData
          | Var Symbol
          | Lambda [Symbol] AST
          | Apply [AST]
+         | Block [AST]
          | Builtin Builtin
     deriving (Show)

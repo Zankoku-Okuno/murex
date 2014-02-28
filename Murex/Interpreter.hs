@@ -24,6 +24,8 @@ interpret ast = evalEnvironmentT [] $ do
     go (Var x) = fromJust <$> Env.find x
     go (Apply (Builtin f : args)) = liftIO . runBuiltin f =<< mapM go args
     go (Apply (f:args)) = flip apply args =<< go f
+    go (Block [x]) = go x
+    go (Block (x:xs)) = go x >> go (Block xs)
     apply :: Value -> [AST] -> Interpreter Value
     apply (Closure xs e env) args = if numArgs >= numParams
         then do
