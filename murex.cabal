@@ -2,7 +2,7 @@
 --  see http://haskell.org/cabal/users-guide/
 
 name:                murex
-version:             0.0.0.0
+version:             0.0.0.1
 synopsis:            An eager, pure functional, general-purpose programming language for programming in the large.
 description:         Murex combines many of the best ideas in programming language design including first-class functions and control, static typing, parametric modules, and a focus on immutable values. The idea is to support what I call the "Five Pillars of Programming"; in no particular order: concision, reliability, performance, communication, clarity. As Murex has a formal definition, which will be developed as the language comes into its own. Many features are known to be useful, but I have not yet explored them all to my satisfaction.
 homepage:            github.com/Zankoku-Okuno/murex
