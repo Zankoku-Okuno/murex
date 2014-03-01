@@ -1,0 +1,9 @@
+While a standard library helps developers build code, there is noting that really helps a developer write documentation. Thus, I want to introduce the idea of "standard jargon", which would basically be a glossary of commonly-used terms. Essentially these terms would describe patterns of data structures, algorithms, and architectures that recur frequently. For example:
+
+
+Association List: (also alist) The most primitve implementation of a map. An alist is a list of pairs. The first component of each pair is the key and the second the associated value. During lookup, the list is searched from left-to-right in O(n). Binding a key is as easy as pushing the new key-value pair on the front of the list. Alists have the advantage that only an equality predicate is nececssary, rather than a hash or comparison function.
+
+Pipeline: A dataflow architecture restricted so that the nodes are connected in sequence. Pipelines are most effective when each processing node can operate incrementally on its input; nodes that cannot become a bottleneck in parallel processing.
+
+
+Given these two entries, I would expect to have to define map (lookup, bind), push, front/back of list, predicate, dataflow (processing node, edge), incremental processing, bottleneck, big-O notation, parallelism.

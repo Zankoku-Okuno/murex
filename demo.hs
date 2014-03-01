@@ -12,15 +12,32 @@ import Murex.Data
 import Murex.Interpreter.Builtin
 import Murex.Syntax.Typeless
 
+import System.Environment
+
 hello = putStrLn "Mesdames, messieures, bon soir!"
 goodbye = putStrLn "Goodbyte, cruel world!"
 
+
+problemTest = "(1 2 3"
+
+interpTest = "putStr \">\"\n\
+             \putStr\n   snoc (getStr ()) '\\n'\n\
+             \(λ (f x) f (f x)) (λ x addNum x x) 3"
+tokenTest = "'a' ()\n\
+             \   lambda\n\
+             \   `body `1\n\
+             \3/5\n\
+             \.(@`foo a.b.c)"
+indentTest = "\n \n#hi\n (\\\n\n)\n      \n  \\\\\n    ()\n ()\n#asgf"
+
+
 main = do
+    args <- getArgs
+    input <- case args of 
+        [filename] -> readFile filename
+        _ -> error "bad arguments"
     hello
-    let input = interpTest
     runEitherT $ do
-        sep
-        liftIO $ putStrLn input
         sep
         tokens <- case Lex.runLexer "demo" input of
             Left err -> liftIO (print err) *> left()
@@ -35,32 +52,22 @@ main = do
             Right val -> return val
         liftIO $ mapM_ print notation
         sep
-        desugared <- case Desugar.desugar notation raw of
+        liftIO $ print raw
+        sep
+        let deSpecialForm = Desugar.specialForms notation raw
+        --liftIO $ print deSpecialForm
+        --sep
+        desugared <- case Desugar.desugar deSpecialForm of
             Left err -> liftIO (print err) *> left()
             Right val -> return val
         liftIO $ print desugared
         sep
-        let asts = Concrete.toAST desugared
-        liftIO $ print asts
+        let ast = Concrete.toAST desugared
+        liftIO $ print ast
         sep
-        results <- liftIO $ interpret asts
+        results <- liftIO $ interpret ast
         liftIO $ print results
         sep
     goodbye
     where
     sep = liftIO $ putStrLn (replicate 36 '=')
-
-murexConst = Lambda [intern "x", intern "y"] (Var $ intern "x")
-murexIgnore = Lambda [intern "x", intern "y"] (Var $ intern "y")
-
-tinyTest = "\"\""
-lambdaParenTest = "addNum 3 λ x x"
-interpTest = "putStr \">\"\n\
-             \putStr\n   snoc (getStr ()) '\\n'\n\
-             \(λ (f x) f (f x)) (λ x addNum x x) 3"
-tokenTest = "'a' ()\n\
-             \   lambda\n\
-             \   `body `1\n\
-             \3/5\n\
-             \.(@`foo a.b.c)"
-indentTest = "\n \n#hi\n (\\\n\n)\n      \n  \\\\\n    ()\n ()\n#asgf"

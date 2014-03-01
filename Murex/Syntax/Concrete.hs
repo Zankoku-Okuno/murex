@@ -17,6 +17,8 @@ data Atom = Literal MurexData
     deriving (Eq)
 
 data Keyword = Lambda
+             | Let | In | Block
+             | Def
   deriving (Eq)
 data Primitive = List | Nil
                | Xons | Xil
@@ -24,7 +26,6 @@ data Primitive = List | Nil
                | At | Ellipsis
                | InfixDot
                | Interpolate
-               | TopLevel
     deriving (Eq)
 
 type Tree = Quasihexpr SourcePos Atom
@@ -38,9 +39,12 @@ toAST (QBranch p (QLeaf _ (Kw Lambda) : QLeaf _ (Name [name]) : body)) = A.Lambd
 toAST (QBranch p (QLeaf _ (Kw Lambda) : QBranch _ names : body)) = A.Lambda (transName <$> names) (toAST (adjoins p body))
     where
     transName (QLeaf _ (Name [name])) = intern name
-toAST (QBranch _ [QLeaf _ (Prim TopLevel), x]) = toAST x
-toAST (QBranch _ (QLeaf _ (Prim TopLevel) : xs)) = A.Block (toAST <$> xs)
+toAST (QBranch _ [QLeaf _ (Kw Def), bind, body]) = A.Define (toAST bind) (toAST body)
+toAST (QBranch _ [QLeaf _ (Kw Block), x]) = toAST x
+toAST (QBranch _ (QLeaf _ (Kw Block) : xs)) = A.Block (toAST <$> xs)
+toAST (QBranch _ [QLeaf _ (Kw Let), QBranch _ [defs, QLeaf _ (Kw In), body]]) = A.LetIn (toAST defs) (toAST body)
 toAST (QBranch _ xs) = A.Apply (toAST <$> xs)
+toAST tree = error $ "toAST: " ++ show tree
 
 
 instance Show Atom where
@@ -59,9 +63,12 @@ instance Show Primitive where
     show At = "@"
     show Ellipsis = ".."
     show Interpolate = "#str"
-    show TopLevel = "#top-level"
 instance Show Keyword where
-  show Lambda = "\955"
+    show Lambda = "\955"
+    show Block = "block"
+    show Let = "let"
+    show In = "in"
+    show Def = "def"
 
 instance Show (Hexpr SourcePos Atom) where
     show (Leaf _ x) = show x

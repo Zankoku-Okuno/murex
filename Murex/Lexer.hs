@@ -182,7 +182,7 @@ literal = withPos $ Literal <$> choice [ unitLit
     charLit = (<?> "character") $ MurexChar <$> between2 (char '\'') literalChar
     strLit = (<?> "string") $ toMurexString . catMaybes <$> between2 (char '\"') (many strChar)
         where
-        strChar = maybeLiteralChar <|> (Just <$> char '\n')
+        strChar = maybeLiteralChar <|> (Just <$> oneOf "\'\n")
     --TODO string interpolation: needs nesting stack
 
 comment :: Lexer ()

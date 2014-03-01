@@ -5,6 +5,7 @@ import Data.Char
 import Data.Sequence ( Seq, (|>), (<|), (><)
                      , ViewL(..), ViewR(..), viewl, viewr)
 import qualified Data.Sequence as S
+import Data.Foldable (toList)
 
 
 data MurexData = MurexUnit
@@ -129,7 +130,7 @@ instance Show MurexData where
                             then show (numerator x)
                             else show (numerator x) ++ "/" ++ show (denominator x)
     show (MurexChar c) = show c --TODO show like murex parses
-    show (MurexSeq s) = show s --TODO show strings better
+    show (MurexSeq s) = maybe (show $ toList s) show (fromMurexString s)
     show (MurexRecord xs) = "{" ++ intercalate ", " (map showRecordItem xs) ++ "}"
     show (MurexVariant l x) = "{" ++ showRecordItem (l, x) ++ "}"
 showRecordItem (l, x) = "`" ++ show l ++ " " ++ show x
@@ -170,4 +171,10 @@ toMurexChar c = MurexChar c
 
 toMurexString :: String -> MurexData
 toMurexString = MurexSeq . S.fromList . map MurexChar
-
+fromMurexString :: Seq MurexData -> Maybe String
+fromMurexString s = let s' = toList s in if all isChar s'
+                                    then Just (map fromMurexChar s')
+                                    else Nothing
+    where
+    isChar (MurexChar _) = True
+    isChar _ = False

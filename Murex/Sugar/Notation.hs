@@ -29,7 +29,7 @@ extractNotation sourcename input = let (directives, body) = partition isNotation
     isNotationDirective (QBranch _ (QLeaf _ (Name ["notation"]):_)) = True
     isNotationDirective _ = False
     transBody [body] = body
-    transBody body = individual (newPos sourcename 1 1) (Prim TopLevel) `adjoinslPos` body
+    transBody body = individual (newPos sourcename 1 1) (Kw Block) `adjoinslPos` body
     transNotation directives = catMaybes <$> mapRecover (map parseNotation directives)
 
 parseNotation :: Tree -> Errors [ParseError] NotationConfig

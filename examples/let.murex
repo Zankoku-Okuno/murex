@@ -1,0 +1,8 @@
+let
+   putStrLn ≡ λ x
+      putStr (snoc x '\n')
+   putStrLn "What's your name?"
+   you ≡ getStr ()
+   in
+   putStr "Why, hello "
+   putStrLn you

@@ -22,10 +22,12 @@ interpret ast = evalEnvironmentT [] $ do
     go (Literal x) = return (Data x)
     go (Lambda xs e) = Closure xs e <$> getFindEnv
     go (Var x) = fromJust <$> Env.find x
+    go (Define (Var x) e) = const (Data MurexUnit) <$> (Env.bind x =<< go e)
     go (Apply (Builtin f : args)) = liftIO . runBuiltin f =<< mapM go args
     go (Apply (f:args)) = flip apply args =<< go f
     go (Block [x]) = go x
     go (Block (x:xs)) = go x >> go (Block xs)
+    go (LetIn def body) = letInEnv (go def) (go body)
     apply :: Value -> [AST] -> Interpreter Value
     apply (Closure xs e env) args = if numArgs >= numParams
         then do
