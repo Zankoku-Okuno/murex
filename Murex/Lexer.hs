@@ -251,7 +251,7 @@ instance Show Token where
 space :: Lexer ()
 space = (<?> "whitespace") $ do
     indentEnabled <- isJust <$> peek
-    let spaceParsers' = if indentEnabled then spaceParsers else newline:spaceParsers
+    let spaceParsers' = if indentEnabled then spaceParsers else simpleNewline:spaceParsers
     choice spaceParsers'
     where
     spaceParsers = [ void $ oneOf " \t" --TODO maybe more inline whitespace
