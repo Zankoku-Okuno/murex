@@ -91,25 +91,25 @@ chrToNum (MurexChar c) = MurexNum (fromIntegral (ord c) % 1)
 
 
 ------ Sequences ------
-seqLen :: MurexData -> MurexData
-seqLen (MurexSeq xs) = MurexNum (fromIntegral (S.length xs) % 1)
-seqGetIndex :: Int -> MurexData -> Maybe MurexData
-seqGetIndex i (MurexSeq xs) = if inBounds i xs then Just (S.index xs i) else Nothing
-seqSetIndex :: Int -> MurexData -> MurexData -> Maybe MurexData
-seqSetIndex i (MurexSeq xs) x = if inBounds i xs then Just (MurexSeq $ S.update i x xs) else Nothing
+lenSeq :: MurexData -> MurexData
+lenSeq (MurexSeq xs) = MurexNum (fromIntegral (S.length xs) % 1)
+ixSeq :: MurexData -> Int -> Maybe MurexData
+ixSeq (MurexSeq xs) i = if inBounds i xs then Just (S.index xs i) else Nothing
+setSeq :: MurexData -> Int -> MurexData -> Maybe MurexData
+setSeq (MurexSeq xs) i x = if inBounds i xs then Just (MurexSeq $ S.update i x xs) else Nothing
 inBounds i xs = 0 <= i && i < S.length xs
 
-seqCons :: MurexData -> MurexData -> MurexData
-seqCons x (MurexSeq xs) = MurexSeq $ x <| xs
-seqSnoc :: MurexData -> MurexData -> MurexData
-seqSnoc (MurexSeq xs) x = MurexSeq $ xs |> x
-seqCat :: MurexData -> MurexData -> MurexData
-seqCat (MurexSeq a) (MurexSeq b) = MurexSeq $ a >< b
+consSeq :: MurexData -> MurexData -> MurexData
+consSeq x (MurexSeq xs) = MurexSeq $ x <| xs
+snocSeq :: MurexData -> MurexData -> MurexData
+snocSeq (MurexSeq xs) x = MurexSeq $ xs |> x
+catSeq :: MurexData -> MurexData -> MurexData
+catSeq (MurexSeq a) (MurexSeq b) = MurexSeq $ a >< b
 
-seqHead (MurexSeq xs) = case viewl xs of { EmptyL -> Nothing; x :< _ -> Just x }
-seqLast (MurexSeq xs) = case viewr xs of { EmptyR -> Nothing; _ :> x -> Just x }
-seqTail (MurexSeq xs) = case viewl xs of { EmptyL -> Nothing; _ :< xs -> Just (MurexSeq xs) }
-seqInit (MurexSeq xs) = case viewr xs of { EmptyR -> Nothing; xs :> _ -> Just (MurexSeq xs) }
+headSeq (MurexSeq xs) = case viewl xs of { EmptyL -> Nothing; x :< _ -> Just x }
+lastSeq (MurexSeq xs) = case viewr xs of { EmptyR -> Nothing; _ :> x -> Just x }
+tailSeq (MurexSeq xs) = case viewl xs of { EmptyL -> Nothing; _ :< xs -> Just (MurexSeq xs) }
+initSeq (MurexSeq xs) = case viewr xs of { EmptyR -> Nothing; xs :> _ -> Just (MurexSeq xs) }
 
 
 ------ Finite Types ------
@@ -141,12 +141,12 @@ data Builtin = PutChr | GetChr
              | PutStr | GetStr
              --TODO more general IO
              -- logic
-             | Not | EqBool | And | Or | Xor
+             | NotBool | EqBool | AndBool | OrBool | XorBool
              -- arithmentic
-             | NegNum | AddNum | SubNum | MulNum | QuoNum | RemNum | QuoremNum | DivNum | IPow | IRoot
+             | NegNum | AddNum | SubNum | MulNum | QuoNum | RemNum | QuoremNum | DivNum | IPowNum | IRootNum
              -- relationals and predicates
-             | EqNum | Neq | Lt | Gt | Lte | Gte
-             | IsInf | IsNan | IsZ | IsPos | IsNeg
+             | EqNum | NeqNum | LtNum | GtNum | LteNum | GteNum
+             | IsInfNum | IsNanNum | IsZNum | IsPosNum | IsNegNum
              -- floating point
              | Exp | Log | Pow | Root | FMA
              | Sin | Cos | Sincos | Tan | Sinh | Cosh | Sincosh | Tanh
@@ -157,9 +157,9 @@ data Builtin = PutChr | GetChr
              | NumChr | ChrNum
              --TODO more conversions
              -- sequences
-             | SeqLen | SeqIx | SeqSet
-             | Cons | Snoc | Cat
-             | Head | Tail | Init | Last
+             | LenSeq | IxSeq | SetSeq
+             | ConsSeq | SnocSeq | CatSeq
+             | HeadSeq | TailSeq | InitSeq | LastSeq
     deriving (Show, Eq)
 
 

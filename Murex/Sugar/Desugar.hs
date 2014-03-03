@@ -101,7 +101,7 @@ defaultKeywords = [ ("λ",   Lambda)
 
 ------ Parens ------
 implicitParens :: Tree -> Tree
-implicitParens = preorder (leftInfix isDef) . preorder (addParens isLambdy)
+implicitParens = preorder (forwardInfix isDef) . preorder (addParens isLambdy)
 --TODO \l &co first, then \def, then :
 --TODO (type/macro) name \def body
     where
