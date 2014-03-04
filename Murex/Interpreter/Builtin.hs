@@ -22,6 +22,8 @@ runBuiltin EqBool [Data a, Data b] = return $ Data $ eqBool a b
 runBuiltin AndBool [Data a, Data b] = return $ Data $ andBool a b
 runBuiltin OrBool [Data a, Data b] = return $ Data $ orBool a b
 runBuiltin XorBool [Data a, Data b] = return $ Data $ xorBool a b
+runBuiltin ElimBool [Data (MurexBool True), c, a] = return c
+runBuiltin ElimBool [Data (MurexBool False), c, a] = return a
 
 runBuiltin NegNum [Data a] = return $ Data $ negNum a
 runBuiltin AddNum [Data a, Data b] = return $ Data $ addNum a b
@@ -50,6 +52,8 @@ runBuiltin TailSeq [Data xs] = return $ Data . fromJust $ tailSeq xs
 runBuiltin InitSeq [Data xs] = return $ Data . fromJust $ initSeq xs
 runBuiltin LastSeq [Data xs] = return $ Data . fromJust $ lastSeq xs
 
+runBuiltin EqChr [Data a, Data b] = return $ Data $ eqChr a b
+
 runBuiltin ChrNum [Data c] = return $ Data $ chrToNum c
 --runBuiltin NumChr [Data n] = return $ Data $ numToChr n --TODO
 
@@ -64,6 +68,7 @@ startEnv = [ (intern "putChr", Lambda [varX] $ Apply [Builtin PutChr, Var varX])
            , (intern "andBool", Lambda [varX, varY] $ Apply [Builtin AndBool, Var varX, Var varY])
            , (intern "orBool", Lambda [varX, varY] $ Apply [Builtin OrBool, Var varX, Var varY])
            , (intern "xorBool", Lambda [varX, varY] $ Apply [Builtin XorBool, Var varX, Var varY])
+           , (intern "elimBool", Lambda [varX, varY, varZ] $ Apply [Builtin ElimBool, Var varX, Var varY, Var varZ])
 
            , (intern "negNum", Lambda [varX] $ Apply [Builtin NegNum, Var varX])
            , (intern "addNum", Lambda [varX, varY] $ Apply [Builtin AddNum, Var varX, Var varY])
@@ -77,6 +82,8 @@ startEnv = [ (intern "putChr", Lambda [varX] $ Apply [Builtin PutChr, Var varX])
            , (intern "lteNum", Lambda [varX, varY] $ Apply [Builtin LteNum, Var varX, Var varY])
            , (intern "gtNum", Lambda [varX, varY] $ Apply [Builtin GtNum, Var varX, Var varY])
            , (intern "gteNum", Lambda [varX, varY] $ Apply [Builtin GteNum, Var varX, Var varY])
+
+           , (intern "eqChr", Lambda [varX, varY] $ Apply [Builtin EqChr, Var varX, Var varY])
 
            , (intern "len", Lambda [varX] $ Apply [Builtin LenSeq, Var varX])
            , (intern "cons", Lambda [varX, varY] $ Apply [Builtin ConsSeq, Var varX, Var varY])
@@ -96,4 +103,5 @@ startEnv = [ (intern "putChr", Lambda [varX] $ Apply [Builtin PutChr, Var varX])
 
 varX = intern "x"
 varY = intern "y"
+varZ = intern "z"
 

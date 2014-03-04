@@ -1,0 +1,7 @@
+putStrLn ≡ λ str putStr (snoc str '\n')
+let
+   input ≡ getChr ()
+   consequent ≡ λ x putStrLn "Marks the spot!"
+   alternate ≡ λ x putStrLn "Just dirt..."
+   in
+   (elimBool (orBool (eqChr 'x' input) (eqChr 'X' input)) consequent alternate) ()

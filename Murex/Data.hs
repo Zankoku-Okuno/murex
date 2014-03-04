@@ -73,6 +73,10 @@ gtNum (MurexNum a) (MurexNum b) = MurexBool (a <= b)
 gteNum (MurexNum a) (MurexNum b) = MurexBool (a >= b)
 
 
+------ Characters ------
+eqChr (MurexChar a) (MurexChar b) = MurexBool (a == b)
+
+
 ------ Conversion ------
 
 --numFloor (MurexNum a) = MurexInt (numerator a `div` denominator a)
@@ -105,6 +109,7 @@ snocSeq :: MurexData -> MurexData -> MurexData
 snocSeq (MurexSeq xs) x = MurexSeq $ xs |> x
 catSeq :: MurexData -> MurexData -> MurexData
 catSeq (MurexSeq a) (MurexSeq b) = MurexSeq $ a >< b
+--TODO split seq at index
 
 headSeq (MurexSeq xs) = case viewl xs of { EmptyL -> Nothing; x :< _ -> Just x }
 lastSeq (MurexSeq xs) = case viewr xs of { EmptyR -> Nothing; _ :> x -> Just x }
@@ -142,6 +147,7 @@ data Builtin = PutChr | GetChr
              --TODO more general IO
              -- logic
              | NotBool | EqBool | AndBool | OrBool | XorBool
+             | ElimBool
              -- arithmentic
              | NegNum | AddNum | SubNum | MulNum | QuoNum | RemNum | QuoremNum | DivNum | IPowNum | IRootNum
              -- relationals and predicates
@@ -152,6 +158,8 @@ data Builtin = PutChr | GetChr
              | Sin | Cos | Sincos | Tan | Sinh | Cosh | Sincosh | Tanh
              | ASin | ACos | ASincos | ATan | ASinh | ACosh | ASincosh | ATanh
              -- TODO floating point exceptions
+             -- characters
+             | EqChr
              -- conversions
              | Numer | Denom
              | NumChr | ChrNum
