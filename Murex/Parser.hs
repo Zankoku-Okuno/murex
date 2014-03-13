@@ -45,6 +45,7 @@ atom = (<?> "atom") $ choice [ longId
     where
     longId = leaf Name $ nameToken `sepBy1` token Lex.Dot
     punctuation = choice [ leaf (const $ Prim At) (token Lex.At)
+                         , leaf (const $ Prim QMark) (token Lex.QMark)
                          , leaf (const $ Prim Ellipsis) (token Lex.Ellipsis)
                          ]
 

@@ -38,36 +38,36 @@ main = do
         _ -> error "bad arguments"
     hello
     runEitherT $ do
-        sep
+        sep "tokens"
         tokens <- case Lex.runLexer "demo" input of
-            Left err -> liftIO (print err) *> left()
+            Left err -> liftIO (print err) *> left ()
             Right tokens -> return tokens
         liftIO $ print $ map snd tokens
-        sep
+        sep "notation"
         trees <- case Par.runParser tokens of
-            Left err -> liftIO (print err) *> left()
+            Left err -> liftIO (print err) *> left ()
             Right val -> return val
         (notation, raw) <- case runErrors (Notation.extractNotation "demo" trees) of
-            Left errs -> liftIO (mapM_ print errs) *> left()
+            Left errs -> liftIO (mapM_ print errs) *> left ()
             Right val -> return val
         liftIO $ mapM_ print notation
-        sep
+        sep "raw"
         liftIO $ print raw
-        sep
+        --sep
         let deSpecialForm = Desugar.specialForms notation raw
         --liftIO $ print deSpecialForm
-        --sep
+        sep "desugared"
         desugared <- case Desugar.desugar deSpecialForm of
             Left err -> liftIO (print err) *> left()
             Right val -> return val
         liftIO $ print desugared
-        sep
+        sep "ast"
         let ast = Concrete.toAST desugared
         liftIO $ print ast
-        sep
+        sep "eval"
         results <- liftIO $ interpret ast
         liftIO $ print results
-        sep
+        sep "done"
     goodbye
     where
-    sep = liftIO $ putStrLn (replicate 36 '=')
+    sep stage = liftIO $ putStrLn (replicate 36 '=' ++ " " ++ stage)

@@ -23,7 +23,7 @@ data Keyword = Lambda
 data Primitive = List | Nil
                | Xons | Xil
                | Tuple
-               | At | Ellipsis
+               | At | QMark | Ellipsis
                | InfixDot
                | Interpolate
     deriving (Eq)
@@ -61,6 +61,7 @@ instance Show Primitive where
     show Xil = "#xil"
     show Tuple = "#tuple"
     show At = "@"
+    show QMark = "?"
     show Ellipsis = ".."
     show Interpolate = "#str"
 instance Show Keyword where

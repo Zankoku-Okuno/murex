@@ -24,7 +24,7 @@ data Token = Space
            | Indent | Newline | Dedent | OpenParen | CloseParen
            | OpenBrack | CloseBrack | OpenBrace | CloseBrace
            | OpenInterp String | CloseInterp String
-           | Dot | Comma | Ellipsis | At
+           | Dot | Comma | Ellipsis | At | QMark
            | Quote | Quasiquote | Unquote | Splice
            | Name String | Label (Either Integer String)
            | Literal MurexData
@@ -86,17 +86,23 @@ postprocess input = go input
     go [] = Right stripSpaces
     go (x:[]) = Right stripSpaces
     go ((_,Space):xs) = go xs
-    go ((posX, x):allY@(posY, y):xs) = case (needsSpacey x, isSpacey y) of
-        (True, True) -> go (allY:xs)
-        (True, False) -> if isException x y
-                            then go (allY:xs)
-                            else Left $ addErrorMessage (Expect "whitespace") $ newErrorMessage (SysUnExpect $ show y) posY
-        (False, _) -> go (allY:xs)
+    go ((posX, x):rest@((posY, y):_)) = case (needsSpacey x, isSpacey y) of
+        (Just True, True) -> go rest
+        (Just True, False) -> if isException x y
+                                then go rest
+                                else Left $ addErrorMessage (Expect "whitespace") $ newErrorMessage (SysUnExpect $ show y) posY
+        (Just False, True) -> if isException x y
+                                then go rest
+                                else Left $ addErrorMessage (UnExpect "whitespace") $ newErrorMessage (SysUnExpect $ show y) posY
+        (Just False, False) -> go rest
+        (Nothing, _) -> go rest
     isSpacey x = x `elem` [Space, Indent, Newline, Dedent, CloseParen, CloseBrack, CloseBrace, Comma, Ellipsis]
-    needsSpacey (Name _) = True
-    needsSpacey (Label _) = True
-    needsSpacey (Literal _) = True
-    needsSpacey _ = False
+    needsSpacey (Name _) = Just True
+    needsSpacey (Label _) = Just True
+    needsSpacey (Literal _) = Just True
+    needsSpacey At = Just False
+    needsSpacey QMark = Just False
+    needsSpacey _ = Nothing
     isException (Name _) Dot = True
     isException _ _ = False
     stripSpaces = filter ((/= Space) . snd) input
@@ -147,6 +153,7 @@ punctuation = withPos $ choice [ const Ellipsis <$> string ".."
                                , const Dot <$> char '.'
                                , const Comma <$> char ','
                                , const At <$> char '@'
+                               , const QMark <$> char '?'
                                ]
 
 quotation :: Lexer (Pos Token)
@@ -198,7 +205,7 @@ restrictedFromName :: Char -> Bool
 restrictedFromName c = c `elem` "\"\'`\\#.,@()[]{}⌜⌞⌟⌝"
 
 restrictedFromStartOfName :: Char -> Bool
-restrictedFromStartOfName c = c `elem` "0123456789" || restrictedFromName c
+restrictedFromStartOfName c = c `elem` "?0123456789" || restrictedFromName c
 
 
 ------ Helpers ------
@@ -237,6 +244,7 @@ instance Show Token where
     show Comma = "comma"
     show Ellipsis = "`..'"
     show At = "`@'"
+    show QMark = "`?'"
     show Quote = error "not using Quote tokens"
     show Quasiquote = "`⌜'"
     show Unquote = "`⌞'"
