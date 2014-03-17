@@ -4,6 +4,9 @@ import Import
 import Murex.Data
 
 data AST = Literal MurexData
+         | Prod (AList Label AST)
+         | Sum Label AST
+         | List [AST]
          | Var Symbol
          | Define AST AST
          | Lambda [Symbol] AST

@@ -11,103 +11,88 @@ import Control.Monad.Errors
 import Text.Parsec (ParseError)
 import qualified Text.Parsec as P
 
-specialForms :: [NotationConfig] -> Tree -> Tree
-specialForms notation = implicitParens . transKw defaultKeywords
+detectKeywords :: [NotationConfig] -> Tree -> Tree
+detectKeywords config = preorder (go keywords, id)
+    where
+    keywords = defaultKeywords --STUB
+    go keywords (Name [x]) = case x `lookup` keywords of
+        Nothing -> Name [x]
+        Just kw -> Kw kw
+    go keywords x = x
 
-desugar :: Tree -> Either [ParseError] Tree
-desugar = runDesugar expression
+
+
+cannonize :: Tree -> Tree
+cannonize input = let atSymbols = preorder (id, rewriteAtSign) input
+                      defHeaders = atSymbols --STUB
+                      lambdaesque = preorder (id, rewriteLambdaesque) defHeaders
+                      letIn = preorder (id, rewriteLet) lambdaesque
+                      infixes = preorder (forwardInfix (`kwIs` Def)) letIn --STUB
+                  in infixes
 
 dedistfix :: [NotationConfig] -> Tree -> Tree
 dedistfix notation = error "TODO"
 
 
-definition :: Desugar Tree
-definition = P.choice [ expression ]
-
-expression :: Desugar Tree
-expression = subNode $ do
-    input <- P.getInput
-    case input of 
-        [_] -> (:[]) <$> satisfy isAtom
-        _ -> P.choice [ block
-                      , letin
-                      , lambda
-                      , defVal
-                      , (:) <$> expression <*> P.many1 expression
-                      ]
-    where
-    isAtom (QLeaf _ (Kw _)) = False
-    isAtom (QLeaf _ _) = True
-    isAtom _ = False
-
-binder :: Desugar Tree
-binder = subNode $ (:[]) <$> shortId
-
-
------- Special Forms ------
-letin :: Desugar [Tree]
-letin = do
-    letkw <- leaf (Kw Let)
-    body <- subNode $ do
-        defs <- (:) <$> definition <*> definition `P.manyTill` P.lookAhead (leaf $ Kw In)
-        inkw <- leaf (Kw In)
-        body <- P.many1 definition
-        let defs' = case defs of
-                        [x] -> x
-                        xs -> (QLeaf (getPos letkw) (Kw Block)) `adjoinslPos` defs
-            body' = case body of
-                        [x] -> x
-                        xs -> (QLeaf (getPos inkw) (Kw Block)) `adjoinslPos` body
-        return [defs', inkw, body']
-    return [letkw, body]
-
---FIXME accept more than only expressions
-block :: Desugar [Tree]
-block = do
-    block <- leaf (Kw Block)
-    body <- P.many1 expression
-    return (block:body)
-
-lambda :: Desugar [Tree]
-lambda = do
-    lambda <- leaf (Kw Lambda)
-    binding <- subNode $ P.many1 binder
-    body <- P.many1 expression
-    return [lambda, binding, adjoinsPos body]
-
-defVal :: Desugar [Tree]
-defVal = do
-    def <- leaf (Kw Def)
-    binding <- binder
-    body <- expression
-    return [def, binding, body]
-
-
 ------ Keywords ------
-transKw :: AList String Keyword -> Tree -> Tree
-transKw config = postorder (go, id)
-    where
-    go (Name [x]) = case lookup x config of
-        Nothing -> Name [x]
-        Just kw -> Kw kw
-    go x = x
-
 defaultKeywords :: AList String Keyword
 defaultKeywords = [ ("λ",   Lambda)
                   , ("let", Let)
                   , ("in",  In)
                   , ("≡",   Def)
+                  --TODO :, type, data, macro, api, module
                   ]
 
------- Parens ------
-implicitParens :: Tree -> Tree
-implicitParens = preorder (forwardInfix isDef) . preorder (addParens isLambdy)
---TODO \l &co first, then \def, then :
---TODO (type/macro) name \def body
+------ Cannonize ------
+rewriteAtSign :: [Tree] -> [Tree]
+rewriteAtSign = tripBy (`kwIs` At) (id, go)
     where
-    isLambdy (QLeaf _ (Kw kw)) = case kw of
-        Lambda -> True
-        _ -> False
-    isLambdy _ = False
-    isDef (QLeaf _ (Kw Def)) = True
-    isDef _ = False
+    go before at after = case after of
+        (x:xs) | isName x -> error "STUB: alias pattern"
+               | isLabel x -> error "STUB: projection"
+               | isNode x -> error "STUB: update or modify"
+        _ -> before ++ (at:after)
+
+rewriteLambdaesque :: [Tree] -> [Tree]
+rewriteLambdaesque = tripBy isLambdaesque (id, go)
+    where
+    isLambdaesque = (`kwElem` [Lambda]) --TODO big lambda, forall
+    go before l after = case after of
+        (x:e@(_:_)) -> before ++ [adjoinsPos [l, x, adjoinsPos e]]
+        _ -> before ++ (l:after)
+
+rewriteLet :: [Tree] -> [Tree]
+rewriteLet = tripBy (`kwIs` Let) (id, go)
+    where
+    go before l after@[QBranch _ body] = tripBy (`kwIs` In) (const invalidLetIn, rewriteIn) body
+        where
+        invalidLetIn = before ++ [l `adjoinPos` adjoinsPos after]
+        rewriteIn []   i []   = before ++ [l,               i]
+        rewriteIn defs i []   = before ++ [l, inBlock defs, i]
+        rewriteIn []   i body = before ++ [l,               i, inBlock body]
+        rewriteIn defs i body = before ++ [l, inBlock defs, i, inBlock body]
+        inBlock [] = error "Murex.Sugar.Desugar.inBlock: can't construct node from nothing"
+        inBlock [x] = x
+        inBlock xs@(x:_) = QLeaf (getPos x) (Kw Block) `adjoinslPos` xs
+    go before l [def, i, body] | i `kwIs` In = before ++ [l, def, i, body]
+    go before l after = before ++ [l `adjoinPos` adjoinsPos after]
+
+
+------ Helpers ------
+kwIs :: Tree -> Keyword -> Bool
+kwIs (QLeaf _ (Kw kw')) kw | kw == kw' = True
+kwIs _ _ = False
+
+kwElem :: Tree -> [Keyword] -> Bool
+kwElem (QLeaf _ (Kw kw')) kws | kw' `elem` kws = True
+kwElem _ _ = False
+
+isName (QLeaf _ (Name _)) = True
+isName _ = False
+
+isLabel (QLeaf _ (Label _)) = True
+isLabel _ = False
+
+isNode (QBranch _ _) = True
+isNode _ = False
+

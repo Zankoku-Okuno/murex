@@ -8,6 +8,8 @@ import qualified Data.Sequence as S
 import Data.Foldable (toList)
 
 
+type Label = Either Int String
+
 data MurexData = MurexUnit
                | MurexBool Bool
                | MurexNum Rational
@@ -20,8 +22,8 @@ data MurexData = MurexUnit
 --               | MurexF64 Double | Murex32 Float
                | MurexChar Char
                | MurexSeq (Seq MurexData)
-               | MurexRecord (AList (Either Int Symbol) MurexData)
-               | MurexVariant (Either Int Symbol) MurexData
+               | MurexRecord (AList Label MurexData)
+               | MurexVariant Label MurexData
 --               | MurexBits TODO
 --               | MurexRef (MVar MurexData) | MurexSharedRef (IORef MurexData)
 --               | MurexArray (IOArray Int MurexData)
@@ -118,11 +120,11 @@ initSeq (MurexSeq xs) = case viewr xs of { EmptyR -> Nothing; xs :> _ -> Just (M
 
 
 ------ Finite Types ------
-project :: MurexData -> (Either Int Symbol) -> Maybe MurexData
+project :: MurexData -> Label -> Maybe MurexData
 project (MurexRecord xs) i = lookup i xs
 project (MurexVariant i0 x) i = if i == i0 then Just x else Nothing
 
-setField :: MurexData -> (Either Int Symbol) -> MurexData -> MurexData
+setField :: MurexData -> Label -> MurexData -> MurexData
 setField (MurexRecord xs) i x = MurexRecord $ (i, x) : filter ((i /=) . fst) xs
 
 

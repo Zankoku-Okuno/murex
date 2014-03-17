@@ -1,0 +1,4 @@
+Cannonization
+
+One of the goals of Murex is to reduce the amount of line-noise neccessary w.r.t. Lisp. As such, an important part of the desugaring process is to add in extra parenthesis in a process we call cannonization. While cannonization should usually just do what you would expect, it is important to understand the process so you can debug your source when it goes subtly wrong.
+

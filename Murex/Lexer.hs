@@ -24,9 +24,9 @@ data Token = Space
            | Indent | Newline | Dedent | OpenParen | CloseParen
            | OpenBrack | CloseBrack | OpenBrace | CloseBrace
            | OpenInterp String | CloseInterp String
-           | Dot | Comma | Ellipsis | At | QMark
+           | Dot | Comma | Ellipsis | At
            | Quote | Quasiquote | Unquote | Splice
-           | Name String | Label (Either Integer String)
+           | Name String | Label Label | Bind String
            | Literal MurexData
     deriving (Eq)
 
@@ -101,7 +101,6 @@ postprocess input = go input
     needsSpacey (Label _) = Just True
     needsSpacey (Literal _) = Just True
     needsSpacey At = Just False
-    needsSpacey QMark = Just False
     needsSpacey _ = Nothing
     isException (Name _) Dot = True
     isException _ _ = False
@@ -153,7 +152,6 @@ punctuation = withPos $ choice [ const Ellipsis <$> string ".."
                                , const Dot <$> char '.'
                                , const Comma <$> char ','
                                , const At <$> char '@'
-                               , const QMark <$> char '?'
                                ]
 
 quotation :: Lexer (Pos Token)
@@ -165,17 +163,21 @@ quotation = (<?> "quotation") $ withPos $ choice [ const Quasiquote <$> char '�
 
 name :: Lexer (Pos Token)
 name = (<?> "identifier") $ withPos $ do
-    base <- many2 (blacklistChar restrictedFromStartOfName) (blacklistChar restrictedFromName)
+    bind <- P.option False (const True <$> char '?')
+    base <- bareName
     primes <- many (char '\'')
-    return $ Name (base ++ primes)
+    return $ (if bind then Bind else Name) (base ++ primes)
 
 label :: Lexer (Pos Token)
 label = (<?> "label") $ withPos $ do
     char '`'
-    Label <$> ((Left <$> numLabel) <|> (Right <$> nameLabel))
+    Label <$> ((Left . fromIntegral <$> numLabel) <|> (Right <$> nameLabel))
     where
-    nameLabel = many2 (blacklistChar restrictedFromStartOfName) (blacklistChar restrictedFromName)
+    nameLabel = bareName
     numLabel = stringToInteger 10 <$> many2 (oneOf "123456789") (oneOf "0123456789")
+
+bareName :: Lexer String
+bareName = many2 (blacklistChar restrictedFromStartOfName) (blacklistChar restrictedFromName)
 
 literal :: Lexer (Pos Token)
 literal = withPos $ Literal <$> choice [ unitLit
@@ -244,12 +246,12 @@ instance Show Token where
     show Comma = "comma"
     show Ellipsis = "`..'"
     show At = "`@'"
-    show QMark = "`?'"
     show Quote = error "not using Quote tokens"
     show Quasiquote = "`⌜'"
     show Unquote = "`⌞'"
     show Splice = "`⌟'"
     show (Name name) = "name (" ++ name ++ ")"
+    show (Bind name) = "bind (" ++ name ++ ")"
     show (Label (Left i)) = "label (" ++ show i ++ ")"
     show (Label (Right name)) = "label (" ++ name ++ ")"
     show (Literal MurexUnit) = "literal (unit)"

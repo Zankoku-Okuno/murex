@@ -11,7 +11,8 @@ import Data.Symbol
 
 data Atom = Literal MurexData
           | Name [String]
-          | Label (Either Integer String)
+          | Bind String
+          | Label Label
           | Kw Keyword
           | Prim Primitive
     deriving (Eq)
@@ -19,12 +20,11 @@ data Atom = Literal MurexData
 data Keyword = Lambda
              | Let | In | Block
              | Def
+             | At | InfixDot | Ellipsis
   deriving (Eq)
 data Primitive = List | Nil
                | Xons | Xil
                | Tuple
-               | At | QMark | Ellipsis
-               | InfixDot
                | Interpolate
     deriving (Eq)
 
@@ -42,7 +42,23 @@ toAST (QBranch p (QLeaf _ (Kw Lambda) : QBranch _ names : body)) = A.Lambda (tra
 toAST (QBranch _ [QLeaf _ (Kw Def), bind, body]) = A.Define (toAST bind) (toAST body)
 toAST (QBranch _ [QLeaf _ (Kw Block), x]) = toAST x
 toAST (QBranch _ (QLeaf _ (Kw Block) : xs)) = A.Block (toAST <$> xs)
-toAST (QBranch _ [QLeaf _ (Kw Let), QBranch _ [defs, QLeaf _ (Kw In), body]]) = A.LetIn (toAST defs) (toAST body)
+toAST (QBranch _ [QLeaf _ (Kw Let), defs, QLeaf _ (Kw In), body]) = A.LetIn (toAST defs) (toAST body)
+toAST (QBranch _ (QLeaf _ (Prim Xons) : xs)) = case filter notXil xs of
+        [] -> error $ "can't form empty finite data"
+        [x] -> uncurry A.Sum (toAssoc x)
+        xs -> A.Prod (toAssoc <$> xs)
+    where
+    notXil (QLeaf _ (Prim Xil)) = False
+    notXil _ = True
+    toAssoc (QBranch _ [QLeaf _ (Label l), x]) = (l, toAST x)
+toAST (QBranch _ (QLeaf _ (Prim Tuple) : xs)) = A.Prod $ loop 0 xs []
+    where
+    loop i [] acc = reverse acc
+    loop i (x:xs) acc = loop (i + 1) xs $ (Left i, toAST x) : acc
+toAST (QBranch _ (QLeaf _ (Prim List) : xs)) = A.List $ toAST <$> filter notNil xs
+    where
+    notNil (QLeaf _ (Prim Nil)) = False
+    notNil _ = True
 toAST (QBranch _ xs) = A.Apply (toAST <$> xs)
 toAST tree = error $ "toAST: " ++ show tree
 
@@ -50,8 +66,11 @@ toAST tree = error $ "toAST: " ++ show tree
 instance Show Atom where
     show (Literal x) = show x
     show (Name parts) = intercalate "." parts
+    show (Bind name) = '?':name
     show (Label (Left i)) = '`':show i
     show (Label (Right name)) = '`':name
+    show (Kw At) = "@"
+    show (Kw Ellipsis) = ".."
     show (Kw x) = '#':show x
     show (Prim x) = show x
 instance Show Primitive where
@@ -60,9 +79,6 @@ instance Show Primitive where
     show Xons = "#xons"
     show Xil = "#xil"
     show Tuple = "#tuple"
-    show At = "@"
-    show QMark = "?"
-    show Ellipsis = ".."
     show Interpolate = "#str"
 instance Show Keyword where
     show Lambda = "\955"
@@ -73,11 +89,11 @@ instance Show Keyword where
 
 instance Show (Hexpr SourcePos Atom) where
     show (Leaf _ x) = show x
-    show (Branch _ [Leaf _ (Prim InfixDot), expr]) = '.':show expr
+    show (Branch _ [Leaf _ (Kw InfixDot), expr]) = '.':show expr
     show (Branch _ xs) = "(" ++ intercalate " " (map show xs) ++ ")"
 
 instance Show (Quasihexpr SourcePos Atom) where
     show (QLeaf _ x) = show x
-    show (QBranch _ [QLeaf _ (Prim InfixDot), expr]) = '.':show expr
+    show (QBranch _ [QLeaf _ (Kw InfixDot), expr]) = '.':show expr
     show (QBranch _ xs) = "(" ++ intercalate " " (map show xs) ++ ")"
     --TODO show quotation

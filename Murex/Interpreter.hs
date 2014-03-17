@@ -20,6 +20,10 @@ interpret ast = evalEnvironmentT [] $ do
     evalBuiltins (x, e) = (,) x <$> go e
     go :: AST -> Interpreter Value
     go (Literal x) = return (Data x)
+    go (Prod xs) = error "TODO interpret products" --MurexRecord <$> (mapM evalElem xs)
+        --where evalElem (l, x) = (,) l <$> go x
+    go (Sum l x) = error "TODO interpret sums"
+    go (List xs) = error "TODO interpret lists"
     go (Lambda xs e) = Closure xs e <$> getFindEnv
     go (Var x) = fromJust <$> Env.find x
     go (Define (Var x) e) = const (Data MurexUnit) <$> (Env.bind x =<< go e)

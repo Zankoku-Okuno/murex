@@ -38,15 +38,15 @@ bareNode = adjoinsPos <$> fullyBareNode
 
 atom :: Parser (Tree)
 atom = (<?> "atom") $ choice [ longId
+                             , leaf Bind bindToken
                              , leaf Label labelToken
                              , leaf Literal literalToken
                              , punctuation
                              ]
     where
     longId = leaf Name $ nameToken `sepBy1` token Lex.Dot
-    punctuation = choice [ leaf (const $ Prim At) (token Lex.At)
-                         , leaf (const $ Prim QMark) (token Lex.QMark)
-                         , leaf (const $ Prim Ellipsis) (token Lex.Ellipsis)
+    punctuation = choice [ leaf (const $ Kw At) (token Lex.At)
+                         , leaf (const $ Kw Ellipsis) (token Lex.Ellipsis)
                          ]
 
 expression :: Parser (Tree)
@@ -95,7 +95,7 @@ expression = choice [ parens
             xil = individual pos0 (Prim Xil)
         return $ xons `adjoinslPos` (xil:res)
     infixDot = do
-        dot <- leaf (const $ Prim InfixDot) (token Lex.Dot)
+        dot <- leaf (const $ Kw InfixDot) (token Lex.Dot)
         expr <- atom <|> parens
         return $ dot `adjoinPos` expr
 
@@ -111,7 +111,14 @@ nameToken = do
         _ -> False
     return res
 
-labelToken :: Parser (Either Integer String)
+bindToken :: Parser String
+bindToken = do
+    (_, Lex.Bind res) <- satisfy $ \t -> case t of
+        Lex.Bind name -> True
+        _ -> False
+    return res
+
+labelToken :: Parser Label
 labelToken = do
     (_, Lex.Label res) <- satisfy $ \t -> case t of
         Lex.Label ix -> True

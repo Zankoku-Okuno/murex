@@ -53,16 +53,15 @@ main = do
         liftIO $ mapM_ print notation
         sep "raw"
         liftIO $ print raw
-        --sep
-        let deSpecialForm = Desugar.specialForms notation raw
-        --liftIO $ print deSpecialForm
-        sep "desugared"
-        desugared <- case Desugar.desugar deSpecialForm of
-            Left err -> liftIO (print err) *> left()
-            Right val -> return val
-        liftIO $ print desugared
+        sep "cannonize"
+        let cannon = Desugar.cannonize . Desugar.detectKeywords notation $ raw
+        liftIO $ print cannon
+        --TODO anon points
+        --TODO de-distfix
+        --TODO unquasiquote
+        --FIXME check syntax instead of using that crappy Concrete.toAST function
         sep "ast"
-        let ast = Concrete.toAST desugared
+        let ast = Concrete.toAST cannon
         liftIO $ print ast
         sep "eval"
         results <- liftIO $ interpret ast

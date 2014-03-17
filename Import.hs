@@ -31,3 +31,4 @@ type Pos' a = (SourcePos', a)
 instance Show SourcePos' where
 	show (SimplePos pos) = show pos
 	show _ = error "TODO: show my SourcePos"
+
