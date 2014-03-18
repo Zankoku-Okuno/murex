@@ -95,10 +95,10 @@ initSeq (MurexSeq xs) = case viewr xs of { EmptyR -> Nothing; xs :> _ -> Just (M
 
 
 ------ Finite Types ------
-project :: Value -> Label -> Maybe Value
-project (MurexRecord xs) i = lookup i xs
-project (MurexVariant i0 x) i = if i == i0 then Just x else Nothing
+project :: Label -> Value -> Maybe Value
+project i (MurexRecord xs) = lookup i xs
+project i (MurexVariant i0 x) = if i == i0 then Just x else Nothing
 
-setField :: Value -> Label -> Value -> Value
-setField (MurexRecord xs) i x = MurexRecord $ (i, x) : filter ((i /=) . fst) xs
+setField :: Label -> Value -> Value -> Value
+setField i (MurexRecord xs) x = MurexRecord $ (i, x) : filter ((i /=) . fst) xs
 

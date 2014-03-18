@@ -59,6 +59,8 @@ runBuiltin LastSeq [xs] = return . fromJust $ lastSeq xs
 
 runBuiltin EqChr [a, b] = return $ eqChr a b
 
+runBuiltin (ProjFn l) [x] = return . fromJust $ project l x
+
 runBuiltin ChrNum [c] = return $ chrToNum c
 --runBuiltin NumChr [n] = return $ numToChr n --TODO
 

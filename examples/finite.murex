@@ -2,3 +2,8 @@
 , `1 {`Right "xyzzy"}
 , `tuple (1, 'a', [])
 }
+
+let
+   x ≡ (1, 'a')
+   in
+   (@`2 x, @`1 x)

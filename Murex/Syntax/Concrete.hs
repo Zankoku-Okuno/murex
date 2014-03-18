@@ -25,6 +25,7 @@ data Primitive = List | Nil
                | Xons | Xil
                | Tuple
                | Interpolate
+               | Project
     deriving (Eq)
 
 type Tree = Quasihexpr SourcePos Atom
@@ -42,6 +43,10 @@ toAST (QBranch _ [QLeaf _ (Kw Def), bind, body]) = A.Define (toAST bind) (toAST 
 toAST (QBranch _ [QLeaf _ (Kw Block), x]) = toAST x
 toAST (QBranch _ (QLeaf _ (Kw Block) : xs)) = A.Block (toAST <$> xs)
 toAST (QBranch _ [QLeaf _ (Kw Let), defs, QLeaf _ (Kw In), body]) = A.LetIn (toAST defs) (toAST body)
+toAST (QBranch _ (QLeaf _ (Prim List) : xs)) = A.Sequence $ toAST <$> filter notNil xs
+    where
+    notNil (QLeaf _ (Prim Nil)) = False
+    notNil _ = True
 toAST (QBranch _ (QLeaf _ (Prim Xons) : xs)) = case filter notXil xs of
         [] -> error $ "can't form empty finite data"
         [x] -> uncurry A.Variant (toAssoc x)
@@ -50,14 +55,11 @@ toAST (QBranch _ (QLeaf _ (Prim Xons) : xs)) = case filter notXil xs of
     notXil (QLeaf _ (Prim Xil)) = False
     notXil _ = True
     toAssoc (QBranch _ [QLeaf _ (Label l), x]) = (l, toAST x)
-toAST (QBranch _ (QLeaf _ (Prim Tuple) : xs)) = A.Record $ loop 0 xs []
+toAST (QBranch _ (QLeaf _ (Prim Tuple) : xs)) = A.Record $ loop 1 xs []
     where
     loop i [] acc = reverse acc
     loop i (x:xs) acc = loop (i + 1) xs $ (Left i, toAST x) : acc
-toAST (QBranch _ (QLeaf _ (Prim List) : xs)) = A.Sequence $ toAST <$> filter notNil xs
-    where
-    notNil (QLeaf _ (Prim Nil)) = False
-    notNil _ = True
+toAST (QBranch _ [QLeaf _ (Prim Project), QLeaf _ (Label l)]) = A.Builtin (A.ProjFn l)
 toAST (QBranch _ xs) = A.Apply (toAST <$> xs)
 toAST tree = error $ "toAST: " ++ show tree
 
@@ -79,8 +81,9 @@ instance Show Primitive where
     show Xil = "#xil"
     show Tuple = "#tuple"
     show Interpolate = "#str"
+    show Project = "#project"
 instance Show Keyword where
-    show Lambda = "\955"
+    show Lambda = "λ"
     show Block = "block"
     show Let = "let"
     show In = "in"

@@ -67,6 +67,8 @@ data Builtin = PutChr | GetChr
              | LenSeq | IxSeq | SetSeq
              | ConsSeq | SnocSeq | CatSeq
              | HeadSeq | TailSeq | InitSeq | LastSeq
+
+             | ProjFn Label
     deriving (Show, Eq)
 
 

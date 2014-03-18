@@ -1,7 +1,6 @@
 module Murex.Sugar.Desugar where
 
 import Import
-import Murex.Sugar
 import Data.Hierarchy
 import Data.Hexpr
 import Language.Desugar
@@ -47,11 +46,12 @@ defaultKeywords = [ ("λ",   Lambda)
 rewriteAtSign :: [Tree] -> [Tree]
 rewriteAtSign = tripBy (`kwIs` At) (id, go)
     where
-    go before at after = case after of
+    go before at after = before ++ case after of
         (x:xs) | isName x -> error "STUB: alias pattern"
-               | isLabel x -> error "STUB: projection"
+               | isLabel x -> (QLeaf (getPos at) (Prim Project) `adjoinPos` x) : xs
                | isNode x -> error "STUB: update or modify"
-        _ -> before ++ (at:after)
+        _ -> at:after
+    unLabel (Label name) = name
 
 rewriteLambdaesque :: [Tree] -> [Tree]
 rewriteLambdaesque = tripBy isLambdaesque (id, go)

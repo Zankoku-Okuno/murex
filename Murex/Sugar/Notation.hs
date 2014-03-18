@@ -1,7 +1,6 @@
 module Murex.Sugar.Notation where
 
 import Import
-import Murex.Sugar
 import Data.Hierarchy
 import Data.Hexpr
 import Language.Distfix

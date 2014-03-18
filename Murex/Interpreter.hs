@@ -50,7 +50,7 @@ interpret ast = evalEnvironmentT [] $ do
         where
         numArgs = length args
         numParams = length xs
-    apply x args = error $ "got non-closure in apply: " ++ show x
+    apply x args = error $ "got non-applicable in apply: " ++ show x
 
 
 

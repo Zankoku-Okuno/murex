@@ -5,7 +5,7 @@ import Data.Foldable (toList)
 import Data.Sequence ( Seq, (|>), (<|), (><)
                      , ViewL(..), ViewR(..), viewl, viewr)
 import qualified Data.Sequence as S
-import Murex.Syntax.Abstract (AST, Literal)
+import Murex.Syntax.Abstract (AST, Literal, Builtin(..))
 import qualified Murex.Syntax.Abstract as A
 import Control.Monad.Environment
 
@@ -33,6 +33,7 @@ data Value = MurexUnit
 --           | MurexHandle Handle
 --           | MurexHandler TODO
            | Closure [Symbol] AST MurexEnv
+           | Prim Builtin
 
 
 {-| Map syntactic literals to machine values -}
@@ -79,5 +80,7 @@ instance Show Value where
     show (MurexRecord xs) = "{" ++ intercalate ", " (map showRecordItem xs) ++ "}"
     show (MurexVariant l x) = "{" ++ showRecordItem (l, x) ++ "}"
     show (Closure _ _ _) = "<closure>"
+    show (Prim (ProjFn (Left l))) = "<project: " ++ show l ++ ">"
+    show (Prim (ProjFn (Right l))) = "<project: " ++ l ++ ">"
 showRecordItem (Left l, x) = "`" ++ show l ++ " " ++ show x
 showRecordItem (Right l, x) = "`" ++ l ++ " " ++ show x
