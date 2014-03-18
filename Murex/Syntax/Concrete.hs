@@ -4,12 +4,11 @@ module Murex.Syntax.Concrete where
 import Import
 import Data.Hierarchy
 import Data.Hexpr
-import Murex.Data
-import qualified Murex.Syntax.Typeless as A
+import qualified Murex.Syntax.Abstract as A
 import Data.Symbol
 
 
-data Atom = Literal MurexData
+data Atom = Lit A.Literal
           | Name [String]
           | Bind String
           | Label Label
@@ -33,7 +32,7 @@ type Tree = Quasihexpr SourcePos Atom
 
 --FIXME DELME
 toAST :: Tree -> A.AST
-toAST (QLeaf _ (Literal x)) = A.Literal x
+toAST (QLeaf _ (Lit x)) = A.Lit x
 toAST (QLeaf _ (Name [name])) = A.Var (intern name)
 toAST (QBranch p (QLeaf _ (Kw Lambda) : QLeaf _ (Name [name]) : body)) = A.Lambda [intern name] (toAST (adjoins p body))
 toAST (QBranch p (QLeaf _ (Kw Lambda) : QBranch _ names : body)) = A.Lambda (transName <$> names) (toAST (adjoins p body))
@@ -45,17 +44,17 @@ toAST (QBranch _ (QLeaf _ (Kw Block) : xs)) = A.Block (toAST <$> xs)
 toAST (QBranch _ [QLeaf _ (Kw Let), defs, QLeaf _ (Kw In), body]) = A.LetIn (toAST defs) (toAST body)
 toAST (QBranch _ (QLeaf _ (Prim Xons) : xs)) = case filter notXil xs of
         [] -> error $ "can't form empty finite data"
-        [x] -> uncurry A.Sum (toAssoc x)
-        xs -> A.Prod (toAssoc <$> xs)
+        [x] -> uncurry A.Variant (toAssoc x)
+        xs -> A.Record (toAssoc <$> xs)
     where
     notXil (QLeaf _ (Prim Xil)) = False
     notXil _ = True
     toAssoc (QBranch _ [QLeaf _ (Label l), x]) = (l, toAST x)
-toAST (QBranch _ (QLeaf _ (Prim Tuple) : xs)) = A.Prod $ loop 0 xs []
+toAST (QBranch _ (QLeaf _ (Prim Tuple) : xs)) = A.Record $ loop 0 xs []
     where
     loop i [] acc = reverse acc
     loop i (x:xs) acc = loop (i + 1) xs $ (Left i, toAST x) : acc
-toAST (QBranch _ (QLeaf _ (Prim List) : xs)) = A.List $ toAST <$> filter notNil xs
+toAST (QBranch _ (QLeaf _ (Prim List) : xs)) = A.Sequence $ toAST <$> filter notNil xs
     where
     notNil (QLeaf _ (Prim Nil)) = False
     notNil _ = True
@@ -64,7 +63,7 @@ toAST tree = error $ "toAST: " ++ show tree
 
 
 instance Show Atom where
-    show (Literal x) = show x
+    show (Lit x) = show x
     show (Name parts) = intercalate "." parts
     show (Bind name) = '?':name
     show (Label (Left i)) = '`':show i

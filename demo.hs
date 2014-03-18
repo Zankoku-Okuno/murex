@@ -8,9 +8,8 @@ import qualified Murex.Sugar.Desugar as Desugar
 import qualified Murex.Syntax.Concrete as Concrete
 
 import qualified Data.Sequence as S
-import Murex.Data
 import Murex.Interpreter.Builtin
-import Murex.Syntax.Typeless
+import Murex.Syntax.Abstract
 
 import System.Environment
 

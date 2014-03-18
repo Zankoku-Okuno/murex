@@ -5,8 +5,8 @@ module Murex.Parser (
     ) where
 
 import Import
-import Murex.Data
 import Murex.Syntax.Concrete
+import qualified Murex.Syntax.Abstract as A
 import Murex.Lexer (Token)
 import qualified Murex.Lexer as Lex
 import Data.Hierarchy
@@ -40,7 +40,7 @@ atom :: Parser (Tree)
 atom = (<?> "atom") $ choice [ longId
                              , leaf Bind bindToken
                              , leaf Label labelToken
-                             , leaf Literal literalToken
+                             , leaf Lit literalToken
                              , punctuation
                              ]
     where
@@ -125,10 +125,10 @@ labelToken = do
         _ -> False
     return res
 
-literalToken :: Parser MurexData
+literalToken :: Parser A.Literal
 literalToken = do
-    (_, Lex.Literal res) <- satisfy $ \t -> case t of
-        Lex.Literal ix -> True
+    (_, Lex.Lit res) <- satisfy $ \t -> case t of
+        Lex.Lit ix -> True
         _ -> False
     return res
 

@@ -5,7 +5,8 @@ module Murex.Lexer (
 
 import Import hiding ((<|>))
 import Control.Monad.Either
-import Murex.Data
+import Murex.Syntax.Abstract (Literal(..))
+import qualified Murex.Syntax.Abstract as A
 import qualified Data.Char as C
 import Text.Parsec ( Parsec, ParseError, SourceName, runParser
                    , parserZero, anyChar, satisfy, char, eof, oneOf
@@ -27,7 +28,7 @@ data Token = Space
            | Dot | Comma | Ellipsis | At
            | Quote | Quasiquote | Unquote | Splice
            | Name String | Label Label | Bind String
-           | Literal MurexData
+           | Lit Literal
     deriving (Eq)
 
 
@@ -99,7 +100,7 @@ postprocess input = go input
     isSpacey x = x `elem` [Space, Indent, Newline, Dedent, CloseParen, CloseBrack, CloseBrace, Comma, Ellipsis]
     needsSpacey (Name _) = Just True
     needsSpacey (Label _) = Just True
-    needsSpacey (Literal _) = Just True
+    needsSpacey (Lit _) = Just True
     needsSpacey At = Just False
     needsSpacey _ = Nothing
     isException (Name _) Dot = True
@@ -180,16 +181,16 @@ bareName :: Lexer String
 bareName = many2 (blacklistChar restrictedFromStartOfName) (blacklistChar restrictedFromName)
 
 literal :: Lexer (Pos Token)
-literal = withPos $ Literal <$> choice [ unitLit
-                                       , numLit
-                                       , charLit
-                                       , strLit
-                                       ]
+literal = withPos $ Lit <$> choice [ unitLit
+                                   , numLit
+                                   , charLit
+                                   , strLit
+                                   ]
     where
     unitLit = const MurexUnit <$> string "()"
     numLit = MurexNum <$> anyNumber
     charLit = (<?> "character") $ MurexChar <$> between2 (char '\'') literalChar
-    strLit = (<?> "string") $ toMurexString . catMaybes <$> between2 (char '\"') (many strChar)
+    strLit = (<?> "string") $ A.toMurexString . catMaybes <$> between2 (char '\"') (many strChar)
         where
         strChar = maybeLiteralChar <|> (Just <$> oneOf "\'\n")
     --TODO string interpolation: needs nesting stack
@@ -254,8 +255,8 @@ instance Show Token where
     show (Bind name) = "bind (" ++ name ++ ")"
     show (Label (Left i)) = "label (" ++ show i ++ ")"
     show (Label (Right name)) = "label (" ++ name ++ ")"
-    show (Literal MurexUnit) = "literal (unit)"
-    show (Literal x) = "literal (" ++ show x ++ ")"
+    show (Lit MurexUnit) = "literal (unit)"
+    show (Lit x) = "literal (" ++ show x ++ ")"
 
 ------ Basic Combinators ------
 space :: Lexer ()

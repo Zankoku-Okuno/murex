@@ -4,6 +4,7 @@ module Import (
     , Text, pack, unpack
     , AList
     , SourcePos, Pos, SourcePos'(..), Pos'
+    , Label
     ) where
 
 import Data.Maybe as X
@@ -31,4 +32,6 @@ type Pos' a = (SourcePos', a)
 instance Show SourcePos' where
 	show (SimplePos pos) = show pos
 	show _ = error "TODO: show my SourcePos"
+
+type Label = Either Int String
 

@@ -1,15 +1,15 @@
 module Murex.Interpreter where
 
-import Import
-import Murex.Data
-import Murex.Syntax.Typeless
+import Import hiding (find)
+import qualified Data.Sequence as S
+import Murex.Syntax.Abstract (AST(..))
 import Murex.Interpreter.Values
-import Murex.Interpreter.Builtin
+import Murex.Interpreter.Primitive
 import Control.Monad.Environment
 import qualified Control.Monad.Environment as Env
 
-type Interpreter = EnvironmentIO Symbol Value
 
+type Interpreter = EnvironmentIO Symbol Value
 
 interpret :: AST -> IO Value
 interpret ast = evalEnvironmentT [] $ do
@@ -19,14 +19,14 @@ interpret ast = evalEnvironmentT [] $ do
     where
     evalBuiltins (x, e) = (,) x <$> go e
     go :: AST -> Interpreter Value
-    go (Literal x) = return (Data x)
-    go (Prod xs) = error "TODO interpret products" --MurexRecord <$> (mapM evalElem xs)
-        --where evalElem (l, x) = (,) l <$> go x
-    go (Sum l x) = error "TODO interpret sums"
-    go (List xs) = error "TODO interpret lists"
+    go (Lit x) = return (toValue x)
+    go (Sequence xs) = MurexSeq . S.fromList <$> (mapM go xs)
+    go (Record xs) = MurexRecord <$> (mapM evalElem xs)
+        where evalElem (l, x) = (,) l <$> go x
+    go (Variant l x) = MurexVariant l <$> go x
     go (Lambda xs e) = Closure xs e <$> getFindEnv
-    go (Var x) = fromJust <$> Env.find x
-    go (Define (Var x) e) = const (Data MurexUnit) <$> (Env.bind x =<< go e)
+    go (Var x) = fromJust <$> find x
+    go (Define (Var x) e) = const MurexUnit <$> (bind x =<< go e)
     go (Apply (Builtin f : args)) = liftIO . runBuiltin f =<< mapM go args
     go (Apply (f:args)) = flip apply args =<< go f
     go (Block [x]) = go x

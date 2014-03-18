@@ -1,0 +1,4 @@
+{ `foo "bar"
+, `1 {`Right "xyzzy"}
+, `tuple (1, 'a', [])
+}

@@ -1,107 +1,104 @@
 module Murex.Interpreter.Builtin where
 
 import Import
+import Data.Sequence ( Seq, (|>), (<|), (><)
+                     , ViewL(..), ViewR(..), viewl, viewr)
 import qualified Data.Sequence as S
-import Data.Foldable (toList)
-import System.IO
-import Murex.Data
 import Murex.Interpreter.Values
-import Murex.Syntax.Typeless
-
-runBuiltin :: Builtin -> [Value] -> IO Value
-runBuiltin PutChr [Data (MurexChar c)] = putChar c >> return (Data MurexUnit)
-runBuiltin GetChr [] = Data . MurexChar <$> getChar
-runBuiltin PutStr [Data (MurexSeq str)] = do
-    putStr $ map fromMurexChar (toList str)
-    hFlush stdout
-    return $ Data MurexUnit
-runBuiltin GetStr [] = Data . MurexSeq . S.fromList . map toMurexChar <$> getLine
-
-runBuiltin NotBool [Data a] = return $ Data $ notBool a
-runBuiltin EqBool [Data a, Data b] = return $ Data $ eqBool a b
-runBuiltin AndBool [Data a, Data b] = return $ Data $ andBool a b
-runBuiltin OrBool [Data a, Data b] = return $ Data $ orBool a b
-runBuiltin XorBool [Data a, Data b] = return $ Data $ xorBool a b
-runBuiltin ElimBool [Data (MurexBool True), c, a] = return c
-runBuiltin ElimBool [Data (MurexBool False), c, a] = return a
-
-runBuiltin NegNum [Data a] = return $ Data $ negNum a
-runBuiltin AddNum [Data a, Data b] = return $ Data $ addNum a b
-runBuiltin SubNum [Data a, Data b] = return $ Data $ subNum a b
-runBuiltin MulNum [Data a, Data b] = return $ Data $ mulNum a b
---runBuiltin QuoNum [Data a, Data b] = Data . fromJust <$> quoNum a b
---runBuiltin RemNum [Data a, Data b] = return $ Data $ remNum a b
---runBuiltin QuoremNum [Data a, Data b] = return $ Data $ quoremNum a b
-runBuiltin DivNum [Data a, Data b] = return $ Data . fromJust $ divNum a b
-
-runBuiltin EqNum [Data a, Data b] = return $ Data $ eqNum a b
-runBuiltin NeqNum [Data a, Data b] = return $ Data $ neqNum a b
-runBuiltin LtNum [Data a, Data b] = return $ Data $ ltNum a b
-runBuiltin LteNum [Data a, Data b] = return $ Data $ lteNum a b
-runBuiltin GtNum [Data a, Data b] = return $ Data $ gtNum a b
-runBuiltin GteNum [Data a, Data b] = return $ Data $ gteNum a b
-
-runBuiltin ConsSeq [Data x, Data xs] = return $ Data $ consSeq x xs
-runBuiltin SnocSeq [Data xs, Data x] = return $ Data $ snocSeq xs x
-runBuiltin CatSeq [Data a, Data b] = return $ Data $ catSeq a b
-runBuiltin LenSeq [Data xs] = return $ Data $ lenSeq xs
---TODO seqIx, seqSet
---runBuiltin IxSeq [Data xs, Data i] = return $ Data . fromJust $ ixSeq xs i
-runBuiltin HeadSeq [Data xs] = return $ Data . fromJust $ headSeq xs
-runBuiltin TailSeq [Data xs] = return $ Data . fromJust $ tailSeq xs
-runBuiltin InitSeq [Data xs] = return $ Data . fromJust $ initSeq xs
-runBuiltin LastSeq [Data xs] = return $ Data . fromJust $ lastSeq xs
-
-runBuiltin EqChr [Data a, Data b] = return $ Data $ eqChr a b
-
-runBuiltin ChrNum [Data c] = return $ Data $ chrToNum c
---runBuiltin NumChr [Data n] = return $ Data $ numToChr n --TODO
-
-startEnv :: AList Symbol AST
-startEnv = [ (intern "putChr", Lambda [varX] $ Apply [Builtin PutChr, Var varX])
-           , (intern "getChr", Lambda [varX] $ Apply [Builtin GetChr])
-           , (intern "putStr", Lambda [varX] $ Apply [Builtin PutStr, Var varX])
-           , (intern "getStr", Lambda [varX] $ Apply [Builtin GetStr])
-
-           , (intern "notBool", Lambda [varX] $ Apply [Builtin NotBool, Var varX])
-           , (intern "eqBool", Lambda [varX, varY] $ Apply [Builtin EqBool, Var varX, Var varY])
-           , (intern "andBool", Lambda [varX, varY] $ Apply [Builtin AndBool, Var varX, Var varY])
-           , (intern "orBool", Lambda [varX, varY] $ Apply [Builtin OrBool, Var varX, Var varY])
-           , (intern "xorBool", Lambda [varX, varY] $ Apply [Builtin XorBool, Var varX, Var varY])
-           , (intern "elimBool", Lambda [varX, varY, varZ] $ Apply [Builtin ElimBool, Var varX, Var varY, Var varZ])
-
-           , (intern "negNum", Lambda [varX] $ Apply [Builtin NegNum, Var varX])
-           , (intern "addNum", Lambda [varX, varY] $ Apply [Builtin AddNum, Var varX, Var varY])
-           , (intern "subNum", Lambda [varX, varY] $ Apply [Builtin SubNum, Var varX, Var varY])
-           , (intern "mulNum", Lambda [varX, varY] $ Apply [Builtin MulNum, Var varX, Var varY])
-           , (intern "divNum", Lambda [varX, varY] $ Apply [Builtin DivNum, Var varX, Var varY])
-
-           , (intern "eqNum", Lambda [varX, varY] $ Apply [Builtin EqNum, Var varX, Var varY])
-           , (intern "neqNum", Lambda [varX, varY] $ Apply [Builtin NeqNum, Var varX, Var varY])
-           , (intern "ltNum", Lambda [varX, varY] $ Apply [Builtin LtNum, Var varX, Var varY])
-           , (intern "lteNum", Lambda [varX, varY] $ Apply [Builtin LteNum, Var varX, Var varY])
-           , (intern "gtNum", Lambda [varX, varY] $ Apply [Builtin GtNum, Var varX, Var varY])
-           , (intern "gteNum", Lambda [varX, varY] $ Apply [Builtin GteNum, Var varX, Var varY])
-
-           , (intern "eqChr", Lambda [varX, varY] $ Apply [Builtin EqChr, Var varX, Var varY])
-
-           , (intern "len", Lambda [varX] $ Apply [Builtin LenSeq, Var varX])
-           , (intern "cons", Lambda [varX, varY] $ Apply [Builtin ConsSeq, Var varX, Var varY])
-           , (intern "snoc", Lambda [varX, varY] $ Apply [Builtin SnocSeq, Var varX, Var varY])
-           , (intern "cat", Lambda [varX, varY] $ Apply [Builtin CatSeq, Var varX, Var varY])
-           , (intern "hd", Lambda [varX] $ Apply [Builtin HeadSeq, Var varX])
-           , (intern "tl", Lambda [varX] $ Apply [Builtin TailSeq, Var varX])
-           , (intern "last", Lambda [varX] $ Apply [Builtin LastSeq, Var varX])
-           , (intern "init", Lambda [varX] $ Apply [Builtin InitSeq, Var varX])
-           
-           , (intern "num->chr", Lambda [varX] $ Apply [Builtin NumChr, Var varX])
-           , (intern "chr->num", Lambda [varX] $ Apply [Builtin ChrNum, Var varX])
-           ]
 
 
+------ Booleans ------
+notBool (MurexBool a) = MurexBool $ not a
+eqBool (MurexBool a) (MurexBool b) = MurexBool $ a == b
+andBool (MurexBool a) (MurexBool b) = MurexBool $ a && b
+orBool (MurexBool a) (MurexBool b) = MurexBool $ a || b
+xorBool (MurexBool a) (MurexBool b) = MurexBool $ a /= b
 
 
-varX = intern "x"
-varY = intern "y"
-varZ = intern "z"
+------ Arithmetic ------
+negNum (MurexNum a) = MurexNum (negate a)
+-- turns out, floating point arithmetic is hard. error conditions have to be put in sticky flags, which means I need access to some stateful flags
+addNum :: Value -> Value -> Value
+addNum (MurexNum a) (MurexNum b) = MurexNum (a + b)
+----TODO verify these choice against floating point standards
+----computations involving NaN
+--addNum MurexNaN _ = MurexNaN
+--addNum _ MurexNaN = MurexNaN
+----computations involving infinities
+--addNum MurexInf MurexNegInf = MurexNaN
+--addNum MurexNegInf MurexInf = MurexNaN
+--addNum MurexInf _ = MurexInf
+--addNum _ MurexInf = MurexInf
+--addNum MurexNegInf _ = MurexNegInf
+--addNum _ MurexNegInf = MurexNegInf
+----computations involving negative zero
+--addNum MurexNegZ MurexNegZ = MurexNegZ
+--addNum MurexNegZ (MurexNum a) = MurexNum a
+--addNum (MurexNum a) MurexNegZ = MurexNum a
+
+subNum (MurexNum a) (MurexNum b) = MurexNum (a - b)
+mulNum (MurexNum a) (MurexNum b) = MurexNum (a * b)
+divNum (MurexNum a) (MurexNum b) = if numerator b == 0 then Nothing else Just (MurexNum (a / b))
+
+
+------ Relations ------
+eqNum (MurexNum a) (MurexNum b) = MurexBool (a == b)
+neqNum (MurexNum a) (MurexNum b) = MurexBool (a /= b)
+ltNum (MurexNum a) (MurexNum b) = MurexBool (a < b)
+lteNum (MurexNum a) (MurexNum b) = MurexBool (a > b)
+gtNum (MurexNum a) (MurexNum b) = MurexBool (a <= b)
+gteNum (MurexNum a) (MurexNum b) = MurexBool (a >= b)
+
+
+------ Characters ------
+eqChr (MurexChar a) (MurexChar b) = MurexBool (a == b)
+
+
+------ Conversion ------
+
+--numFloor (MurexNum a) = MurexInt (numerator a `div` denominator a)
+--numCeil (MurexNum a) = MurexInt $ if denominator a == 1 then numerator a else (numerator a `div` denominator a) + 1
+
+--numNumer (MurexNum a) = MurexInt $ numerator a
+--numDenom (MurexNum a) = MurexInt $ denominator a
+
+numToChr :: Value -> Maybe Value
+numToChr (MurexNum a) = if valid then Just (MurexChar $ chr int) else Nothing
+    where
+    valid = denominator a == 1 && 0 <= int && int <= 0x10FFFF
+    int = fromInteger $ numerator a
+chrToNum :: Value -> Value
+chrToNum (MurexChar c) = MurexNum (fromIntegral (ord c) % 1)
+
+
+------ Sequences ------
+lenSeq :: Value -> Value
+lenSeq (MurexSeq xs) = MurexNum (fromIntegral (S.length xs) % 1)
+ixSeq :: Value -> Int -> Maybe Value
+ixSeq (MurexSeq xs) i = if inBounds i xs then Just (S.index xs i) else Nothing
+setSeq :: Value -> Int -> Value -> Maybe Value
+setSeq (MurexSeq xs) i x = if inBounds i xs then Just (MurexSeq $ S.update i x xs) else Nothing
+inBounds i xs = 0 <= i && i < S.length xs
+
+consSeq :: Value -> Value -> Value
+consSeq x (MurexSeq xs) = MurexSeq $ x <| xs
+snocSeq :: Value -> Value -> Value
+snocSeq (MurexSeq xs) x = MurexSeq $ xs |> x
+catSeq :: Value -> Value -> Value
+catSeq (MurexSeq a) (MurexSeq b) = MurexSeq $ a >< b
+--TODO split seq at index
+
+headSeq (MurexSeq xs) = case viewl xs of { EmptyL -> Nothing; x :< _ -> Just x }
+lastSeq (MurexSeq xs) = case viewr xs of { EmptyR -> Nothing; _ :> x -> Just x }
+tailSeq (MurexSeq xs) = case viewl xs of { EmptyL -> Nothing; _ :< xs -> Just (MurexSeq xs) }
+initSeq (MurexSeq xs) = case viewr xs of { EmptyR -> Nothing; xs :> _ -> Just (MurexSeq xs) }
+
+
+------ Finite Types ------
+project :: Value -> Label -> Maybe Value
+project (MurexRecord xs) i = lookup i xs
+project (MurexVariant i0 x) i = if i == i0 then Just x else Nothing
+
+setField :: Value -> Label -> Value -> Value
+setField (MurexRecord xs) i x = MurexRecord $ (i, x) : filter ((i /=) . fst) xs
 
