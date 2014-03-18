@@ -1,0 +1,28 @@
+I'm thinking that open data types should be accounted for by objects (what a crappy name! but I suppose "class" isn't so bad, and I can use "instance" to mean a value of a type defined by a class).
+
+As far as the philosophy of using classes and objects is concerned, remember that classes are one tool among many. While mainstream languages might force you to use an object for everything, is a class better than an ADT, a function, dynamic types, or a module in your circumstances? Is an object-oriented architecture better than a dataflow graph, a monad or even a simple subroutine for implementing some particular functionality? Traditional OO languages collapse these concepts and make it hard to think about design; do not try to think that way.
+
+The obvious solution was to allow finite products to subtype each other. Unfortunately, this means that projection &c would require an extra level of redirection. Even so, passing a pointer to self would be impossible to type correctly.
+	
+	> type Fish = {`size Int, `getSize Fish \to Int}
+	> type CFish1 = {`size Int, `color String, `getSize Fish \to int}
+	> type CFish2 = {`size Int, `color String, `getSize CFish \to int}
+	> # neither solution allows for both subtyping and access to extensions of fields
+
+Now that I've settled on objects as a primitive concept, let's make some decisions.
+  * I'd have to go with classical rather than prototypical, for the same typing reasons above. Luckily, this means I can compile vtables and reduce memory usage to O(1) rather than O(n) on the number of objects (well, one additional pointer per object won't kill anybody).
+  * I may as well go with multiple inheritance. They offer additional methods of composition (whther they are modular is a different question), and if we're using _objects_ in stead of plain data, we shouldn't be worried about an additional indirection. Mixins are just weak multiple inheritance for the sake of some slight efficiency.
+  * Within multiple inheritance, we use left-to-right depth-first search. Breadth first is known to be non-modular (break encapsulation).
+  * If you want to satisfy invariants about frameworks, `deferred` is much better than `super`. This strategy allows methods to be un-, partially, or totally defined. (I will need to ensure that all constructors are deferred if any method is deferred)
+  * Only methods are public; all data fields are private; there is nothing protected. If you want private methods, type abstraction should do. If you want public data, too bad; that's only an efficiency concern.
+  * Like everything else, objects are not default mutable. If you want mutability, use references explicitly.
+  * Use of the `abstract` and `override` keywords are necessary. In fact, look at those D articles to make sure I'm not missing other hijack holes.
+
+And now some open questions:
+  * Multimethods are useful. How do I implement them?
+  * What is downcasting good for? How does it interact with blame calculus casts? What is `instanceof` good for?
+  * What is the syntax?
+  * Is `overrride` really the right word? Why not `inject` or `implement`? Should we have both, one for replacing defined methods and one for filling the holes of an deferred method?
+
+And some implementation concerns:
+  * Since you can't inherit without having the inheritee available, we should be able to do inheritance folding (no need to search many vtables: just merge the fields and vtables at compiletime, including inlining overriding methods into )

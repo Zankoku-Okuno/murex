@@ -1,0 +1,25 @@
+delay creation of thunks, eg.
+	let
+		dx' \def abs $ x1 - x2
+		d' \def delay
+			dx' ** 2 + (y1 - y2) ** 2
+		in
+		not (dx' > dx) && d < d'
+is equivalent to
+	let
+		dx' \def abs $ x1 - x2
+		in
+		not (dx' > dx) && let
+			d' \def delay
+				dx' ** 2 + (y1 - y2) ** 2
+			in
+			d < force d'
+which in turn can be simplified to the very fast:
+	let
+		dx' \def abs $ x1 - x2
+		in
+		not (dx' > dx) && let
+			d' \def dx' ** 2 + (y1 - y2) ** 2
+			in
+			d < d'
+and then inlining should take over at that point, eliminating  d' as a variable

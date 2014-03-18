@@ -1,0 +1,6 @@
+Anonymous points are not a general method of program composition.
+They are for placing slots in a partially-applied function or distfix. For example:
+	foo ≡ bar a _ c d
+	(if _ = x' then c else a) ∘ foo $ b
+Do not let them do fancy stuff like the following. It will get confusing, particularly when you add features.
+	_>>=_ ≡ _ ∘ unMonad
