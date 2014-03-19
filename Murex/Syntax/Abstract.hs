@@ -18,6 +18,9 @@ data AST = Lit Literal
          | Block [AST]
          | LetIn AST AST
          | Builtin Builtin
+         | Project Label
+         | Modify Label AST
+         | Update Label AST
 
 data Literal = MurexUnit
              | MurexBool Bool
@@ -67,8 +70,6 @@ data Builtin = PutChr | GetChr
              | LenSeq | IxSeq | SetSeq
              | ConsSeq | SnocSeq | CatSeq
              | HeadSeq | TailSeq | InitSeq | LastSeq
-
-             | ProjFn Label
     deriving (Show, Eq)
 
 
@@ -84,7 +85,9 @@ instance Show AST where
     show (Apply es) = "Apply [" ++ intercalate ", " (show <$> es) ++ "]"
     show (Block es) = "Block [" ++ intercalate ", " (show <$> es) ++ "]"
     show (LetIn def body) = "Let (" ++ show def ++ ") (" ++ show body ++ ")"
-    show (Builtin b) = show b
+    show (Project l) = "Project " ++ showLabel l
+    show (Modify l f) = "Modify " ++ showLabel l ++ " (" ++ show f ++ ")"
+    show (Update l f) = "Update " ++ showLabel l ++ " (" ++ show f ++ ")"
 instance Show Literal where
     show MurexUnit = "()"
     show (MurexBool True) = "True"
@@ -98,6 +101,8 @@ instance Show Literal where
     show (MurexVariant l x) = "{" ++ showRecordItem (l, x) ++ "}"
 showRecordItem (Left l, x) = "`" ++ show l ++ " " ++ show x
 showRecordItem (Right l, x) = "`" ++ l ++ " " ++ show x
+showLabel (Left l) = show l
+showLabel (Right l) = l
 
 fromMurexChar :: Literal -> Char
 fromMurexChar (MurexChar c) = c

@@ -33,7 +33,9 @@ data Value = MurexUnit
 --           | MurexHandle Handle
 --           | MurexHandler TODO
            | Closure [Symbol] AST MurexEnv
-           | Prim Builtin
+           | PrjFn Label
+           | ModFn Label Value
+           | UpdFn Label Value
 
 
 {-| Map syntactic literals to machine values -}
@@ -80,7 +82,10 @@ instance Show Value where
     show (MurexRecord xs) = "{" ++ intercalate ", " (map showRecordItem xs) ++ "}"
     show (MurexVariant l x) = "{" ++ showRecordItem (l, x) ++ "}"
     show (Closure _ _ _) = "<closure>"
-    show (Prim (ProjFn (Left l))) = "<project: " ++ show l ++ ">"
-    show (Prim (ProjFn (Right l))) = "<project: " ++ l ++ ">"
+    show (PrjFn l) = "<project: " ++ showLabel l ++ ">"
+    show (ModFn l f) = "<modify " ++ showLabel l ++ ": " ++ show f ++ ">"
+    show (UpdFn l f) = "<update " ++ showLabel l ++ ": " ++ show f ++ ">"
 showRecordItem (Left l, x) = "`" ++ show l ++ " " ++ show x
 showRecordItem (Right l, x) = "`" ++ l ++ " " ++ show x
+showLabel (Left l) = '`':show l
+showLabel (Right l) = '`':l

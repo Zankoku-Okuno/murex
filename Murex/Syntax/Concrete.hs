@@ -25,7 +25,7 @@ data Primitive = List | Nil
                | Xons | Xil
                | Tuple
                | Interpolate
-               | Project
+               | Project | Update | Modify
     deriving (Eq)
 
 type Tree = Quasihexpr SourcePos Atom
@@ -59,7 +59,9 @@ toAST (QBranch _ (QLeaf _ (Prim Tuple) : xs)) = A.Record $ loop 1 xs []
     where
     loop i [] acc = reverse acc
     loop i (x:xs) acc = loop (i + 1) xs $ (Left i, toAST x) : acc
-toAST (QBranch _ [QLeaf _ (Prim Project), QLeaf _ (Label l)]) = A.Builtin (A.ProjFn l)
+toAST            (QBranch _ [QLeaf _ (Prim Project), QLeaf _ (Label l)])     = A.Project l
+toAST (QBranch _ [QBranch _ [QLeaf _ (Prim Modify),  QLeaf _ (Label l)], f]) = A.Modify  l (toAST f)
+toAST (QBranch _ [QBranch _ [QLeaf _ (Prim Update),  QLeaf _ (Label l)], f]) = A.Update  l (toAST f)
 toAST (QBranch _ xs) = A.Apply (toAST <$> xs)
 toAST tree = error $ "toAST: " ++ show tree
 
@@ -82,6 +84,8 @@ instance Show Primitive where
     show Tuple = "#tuple"
     show Interpolate = "#str"
     show Project = "#project"
+    show Modify = "#modify"
+    show Update = "#update"
 instance Show Keyword where
     show Lambda = "λ"
     show Block = "block"

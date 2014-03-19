@@ -99,6 +99,11 @@ project :: Label -> Value -> Maybe Value
 project i (MurexRecord xs) = lookup i xs
 project i (MurexVariant i0 x) = if i == i0 then Just x else Nothing
 
+update :: Label -> Value -> Value -> Maybe Value
+update i (MurexRecord xs) v = case break ((==i) . fst) xs of
+	(_, []) -> Nothing
+	(before, (_:after)) -> Just . MurexRecord $ before ++ ((i,v):after)
+
 setField :: Label -> Value -> Value -> Value
 setField i (MurexRecord xs) x = MurexRecord $ (i, x) : filter ((i /=) . fst) xs
 

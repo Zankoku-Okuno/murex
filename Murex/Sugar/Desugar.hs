@@ -47,9 +47,11 @@ rewriteAtSign :: [Tree] -> [Tree]
 rewriteAtSign = tripBy (`kwIs` At) (id, go)
     where
     go before at after = before ++ case after of
+        (QBranch _ (x:xs):after') | isLabel x -> (:after') $ case xs of
+            (QLeaf _ (Kw Def):body) -> (individual (getPos at) (Prim Update) `adjoinPos` x) `adjoinPos` adjoinsPos body
+            body -> (individual (getPos at) (Prim Modify) `adjoinPos` x) `adjoinPos` adjoinsPos body
         (x:xs) | isName x -> error "STUB: alias pattern"
                | isLabel x -> (QLeaf (getPos at) (Prim Project) `adjoinPos` x) : xs
-               | isNode x -> error "STUB: update or modify"
         _ -> at:after
     unLabel (Label name) = name
 
@@ -92,7 +94,4 @@ isName _ = False
 
 isLabel (QLeaf _ (Label _)) = True
 isLabel _ = False
-
-isNode (QBranch _ _) = True
-isNode _ = False
 
