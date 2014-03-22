@@ -28,11 +28,11 @@ data Primitive = List | Nil
                | Project | Update | Modify
     deriving (Eq)
 
-type Tree = Quasihexpr SourcePos Atom
+type QTree = Quasihexpr SourcePos Atom
 
 
 --FIXME DELME
-toAST :: Tree -> A.AST
+toAST :: QTree -> A.AST
 toAST (QLeaf _ (Lit x)) = A.Lit x
 toAST (QLeaf _ (Name [name])) = A.Var (intern name)
 toAST (QBranch p (QLeaf _ (Kw Lambda) : QLeaf _ (Name [name]) : body)) = A.Lambda [intern name] (toAST (adjoins p body))

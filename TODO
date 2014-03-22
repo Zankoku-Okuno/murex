@@ -16,7 +16,16 @@ Lexer
 		for this, I need to track at least paren depth, probably general enclosement depth
 	literate files
 	unicodizing
+	line comments take inordinately long to parse (noticable at 8 or more, grows apparently exponentially)
 
 Sugar
+	notation should be parsed in the lexer
 	anonymous points
 	override the spellings of keywords
+	error report notation config
+	validate notation better:
+		use and level are reserved as notation names
+		no underscores in notation names
+		always slots in distfix parts, but not consecutive slots
+		no double-definition
+		define before use

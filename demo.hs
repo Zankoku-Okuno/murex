@@ -1,6 +1,6 @@
 import Import
 import Murex.Interpreter
-import Control.Monad.Errors
+import Control.Monad.Errors (runErrors)
 import qualified Murex.Lexer as Lex
 import qualified Murex.Parser as Par
 import qualified Murex.Sugar.Notation as Notation
@@ -50,17 +50,29 @@ main = do
             Left errs -> liftIO (mapM_ print errs) *> left ()
             Right val -> return val
         liftIO $ mapM_ print notation
+        sep "distfixes"
+        (distfixExport, distfixTable) <- case runErrors $ Notation.interpretNotation notation of
+            Left errs -> liftIO (mapM_ print errs) *> left ()
+            Right val -> right val
+        liftIO $ mapM_ print distfixTable
         sep "raw"
         liftIO $ print raw
         sep "cannonize"
         let cannon = Desugar.cannonize . Desugar.detectKeywords notation $ raw
         liftIO $ print cannon
         --TODO anon points
+        let noAnon = cannon
         --TODO de-distfix
+        sep "de-distfix"
+        dedistfixed <- case Desugar.dedistfix distfixTable noAnon of
+            Left err -> liftIO (print err) *> left ()
+            Right val -> right val
+        liftIO $ print dedistfixed
         --TODO unquasiquote
+        let desugared = dedistfixed
         --FIXME check syntax instead of using that crappy Concrete.toAST function
         sep "ast"
-        let ast = Concrete.toAST cannon
+        let ast = Concrete.toAST desugared
         liftIO $ print ast
         sep "eval"
         results <- liftIO $ interpret ast

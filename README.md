@@ -93,6 +93,8 @@ I plan to build Murex roughly according to the stages outlined below. The goal i
   * Type and data constructors
   * Pattern matching
 
+Scheduled cleanup
+
 ### Stage Four
   * Type checking
   * Reference cells
@@ -104,6 +106,8 @@ I plan to build Murex roughly according to the stages outlined below. The goal i
   * Multiple files
   * Basic linker
 
+Scheduled cleanup
+
 ### Stage Seven
   * Macros
   * Syntax abstraction
@@ -114,12 +118,13 @@ I plan to build Murex roughly according to the stages outlined below. The goal i
   * Locking references
 
 ### Stage Nine
-  * Cleanup 
   * Compiler
   * REPL
 
+Scheduled cleanup
+
 ### Further
-At this point, I'll have a better understanding of the possible features and may begin integrating some. The definition should be nearly complete. I'll have a tiny set of libraries that I will begin to clean and expand on; we'll especially need a good OS interface. As we gain users, I'll need a package archive. The compiler will need to do optimizations. We can begin work on foreign function interfaces to C and JavaScript, among others. Since locking algorithms are not composable, we'll need software transactional memory.
+At this point, I'll have a better understanding of the possible features and may begin integrating some. The definition should be nearly complete. I'll have a tiny set of libraries that I will begin to clean and expand on; we'll especially need a good OS interface. As we gain users, I'll need a package archive. The compiler will need to do optimizations. We can begin work on foreign function interfaces to C and JavaScript, among others. Since locking algorithms are not compositional, we'll need software transactional memory.
 
 
 

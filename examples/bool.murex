@@ -1,7 +1,20 @@
+notation use stuff
+notation stuff
+   _=_ left
+   _or!_ left
+   if!_then_else_
+   _$_ right
+
+_$_ ≡ λ (x y) x y
+if!_then_else_ ≡ λ (p c a) elimBool p c a $ ()
 putStrLn ≡ λ str putStr (snoc str '\n')
+_or!_ ≡ orBool
+_=_ ≡ eqChr
+
+
 let
    input ≡ getChr ()
    consequent ≡ λ x putStrLn "Marks the spot!"
    alternate ≡ λ x putStrLn "Just dirt..."
    in
-   (elimBool (orBool (eqChr 'x' input) (eqChr 'X' input)) consequent alternate) ()
+   if! 'x' = input or! 'X' = input then consequent else alternate

@@ -2,3 +2,21 @@ Cannonization
 
 One of the goals of Murex is to reduce the amount of line-noise neccessary w.r.t. Lisp. As such, an important part of the desugaring process is to add in extra parenthesis in a process we call cannonization. While cannonization should usually just do what you would expect, it is important to understand the process so you can debug your source when it goes subtly wrong.
 
+
+
+FIXME it might be better to go from cannon to source.
+
+cannonize:
+    reduce @ symbols to alias, project, update and modify forms
+    leading keywords for non-value definitions (type, data, macro, module, &c): add parens after kw to end of containing node
+    lambda-y stuff: add parens from before kw to end of containing node
+    let-in implicit structure
+    lowest-precedence infixes: \def, :, \to (in that order)
+anonymous points (before too many parens are introduced) (add only a generic Lambdaesque keyword for now)
+de-distfix
+    user-driven
+    dotted expressions
+unquasiquote
+check syntax (including translating Lambdaesque to the appropriate binder) (we don't check inside quotes yet)
+translation to AST must wait until after macros are detected, but expansion can happen after
+

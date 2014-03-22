@@ -25,4 +25,11 @@ And now some open questions:
   * Is `overrride` really the right word? Why not `inject` or `implement`? Should we have both, one for replacing defined methods and one for filling the holes of an deferred method?
 
 And some implementation concerns:
-  * Since you can't inherit without having the inheritee available, we should be able to do inheritance folding (no need to search many vtables: just merge the fields and vtables at compiletime, including inlining overriding methods into )
+  * Since you can't inherit without having the inheritee available, we should be able to do inheritance folding (no need to search many vtables: just merge the fields and vtables at compiletime, including inlining overriding methods into deferred methods)
+
+
+======
+
+One thing I can think to use objects for is tokens in a parser.
+Tokens must provide a satisfy predicate, but other data may be needed to help track location.
+Similarly, a token stream will need to be Traversable, but may need additional information to report location when eof is reached.

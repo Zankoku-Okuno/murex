@@ -1,0 +1,22 @@
+notation use name1
+
+notation name1
+   namedLevel
+notation name2
+   begin_end
+notation name3
+   _+_ left
+notation name4
+   name1
+   name2
+notation namedLevel
+   _!
+   _$_ right
+   level
+      _1
+   name2
+   level
+      _2_ left
+   level
+      _a
+      _b

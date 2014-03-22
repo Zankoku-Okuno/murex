@@ -1,3 +1,4 @@
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 module Murex.Sugar.Desugar where
 
 import Import
@@ -6,11 +7,12 @@ import Data.Hexpr
 import Language.Desugar
 import Murex.Syntax.Concrete
 import Murex.Sugar.Notation
+import Language.Distfix
 import Control.Monad.Errors
 import Text.Parsec (ParseError)
 import qualified Text.Parsec as P
 
-detectKeywords :: [NotationConfig] -> Tree -> Tree
+detectKeywords :: [NotationConfig] -> QTree -> QTree
 detectKeywords config = preorder (go keywords, id)
     where
     keywords = defaultKeywords --STUB
@@ -21,7 +23,7 @@ detectKeywords config = preorder (go keywords, id)
 
 
 
-cannonize :: Tree -> Tree
+cannonize :: QTree -> QTree
 cannonize input = let atSymbols = preorder (id, rewriteAtSign) input
                       defHeaders = atSymbols --STUB
                       lambdaesque = preorder (id, rewriteLambdaesque) defHeaders
@@ -29,8 +31,24 @@ cannonize input = let atSymbols = preorder (id, rewriteAtSign) input
                       infixes = preorder (forwardInfix (`kwIs` Def)) letIn --STUB
                   in infixes
 
-dedistfix :: [NotationConfig] -> Tree -> Tree
-dedistfix notation = error "TODO"
+dedistfix :: DistfixTable QTree -> QTree -> Either (DistfixError QTree) QTree
+dedistfix = runDistfix
+
+instance DistfixStructure QTree where
+    unwrap (QLeaf _ _) = Nothing
+    unwrap (QBranch pos xs) = Just (xs, adjoins pos)
+    unwrap (Quasiquote pos x) = do
+        (val, inner) <- unwrap x
+        return (val, Quasiquote pos . inner)
+    unwrap (Unquote pos x) = do
+        (val, inner) <- unwrap x
+        return (val, Unquote pos . inner)
+    unwrap (Splice pos x) = do
+        (val, inner) <- unwrap x
+        return (val, Splice pos . inner)
+    defaultRewrap = adjoinsPos
+    nodeMatch (QLeaf _ x) (QLeaf _ y) = x == y
+    nodeMatch _ _ = False
 
 
 ------ Keywords ------
@@ -43,7 +61,7 @@ defaultKeywords = [ ("λ",   Lambda)
                   ]
 
 ------ Cannonize ------
-rewriteAtSign :: [Tree] -> [Tree]
+rewriteAtSign :: [QTree] -> [QTree]
 rewriteAtSign = tripBy (`kwIs` At) (id, go)
     where
     go before at after = before ++ case after of
@@ -55,7 +73,7 @@ rewriteAtSign = tripBy (`kwIs` At) (id, go)
         _ -> at:after
     unLabel (Label name) = name
 
-rewriteLambdaesque :: [Tree] -> [Tree]
+rewriteLambdaesque :: [QTree] -> [QTree]
 rewriteLambdaesque = tripBy isLambdaesque (id, go)
     where
     isLambdaesque = (`kwElem` [Lambda]) --TODO big lambda, forall
@@ -63,7 +81,7 @@ rewriteLambdaesque = tripBy isLambdaesque (id, go)
         (x:e@(_:_)) -> before ++ [adjoinsPos [l, x, adjoinsPos e]]
         _ -> before ++ (l:after)
 
-rewriteLet :: [Tree] -> [Tree]
+rewriteLet :: [QTree] -> [QTree]
 rewriteLet = tripBy (`kwIs` Let) (id, go)
     where
     go before l after@[QBranch _ body] = tripBy (`kwIs` In) (const invalidLetIn, rewriteIn) body
@@ -81,11 +99,11 @@ rewriteLet = tripBy (`kwIs` Let) (id, go)
 
 
 ------ Helpers ------
-kwIs :: Tree -> Keyword -> Bool
+kwIs :: QTree -> Keyword -> Bool
 kwIs (QLeaf _ (Kw kw')) kw | kw == kw' = True
 kwIs _ _ = False
 
-kwElem :: Tree -> [Keyword] -> Bool
+kwElem :: QTree -> [Keyword] -> Bool
 kwElem (QLeaf _ (Kw kw')) kws | kw' `elem` kws = True
 kwElem _ _ = False
 
