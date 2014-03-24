@@ -9,6 +9,7 @@ import qualified Text.Parsec as P
 import Text.Parsec (ParseError, SourceName)
 import Text.Parsec.Pos (newPos)
 import Murex.Syntax.Concrete
+import Murex.Syntax.Abstract (Literal(MurexUnit))
 import Murex.Parser
 
 data NotationConfig = Use    SourcePos String
@@ -47,8 +48,9 @@ extractNotation sourcename input = let (directives, body) = partition isNotation
     isNotationDirective (QLeaf _ (Name ["notation"])) = True
     isNotationDirective (QBranch _ (QLeaf _ (Name ["notation"]):_)) = True
     isNotationDirective _ = False
+    transBody [] = individual (newPos sourcename 0 0) (Lit MurexUnit)
     transBody [body] = body
-    transBody body = individual (newPos sourcename 1 1) (Kw Block) `adjoinslPos` body
+    transBody body = individual (newPos sourcename 0 0) (Kw Block) `adjoinslPos` body
     transNotation directives = catMaybes <$> mapRecover (map parseNotation directives)
 
 

@@ -1,13 +1,22 @@
 notation use stuff
 notation stuff
    _=_ left
+   level
+      _snoc_ left
+      _cons_ right
    _or!_ left
-   if!_then_else_
+   level
+      if_then_else
+      if!_then_else_
    _$_ right
 
 _$_ ≡ λ (x y) x y
-if!_then_else_ ≡ λ (p c a) elimBool p c a $ ()
-putStrLn ≡ λ str putStr (snoc str '\n')
+#TODO _$_ ≡ _ _
+if_then_else ≡ λ (p c a) elimBool p c a $ ()
+#TODO if_then_else ≡ elimBool _ _ _ $ () 
+if!_then_else_ ≡ elimBool
+putStrLn ≡ λ str putStr $ str snoc '\n'
+#TODO putStrLn ≡ putStr $ _ snoc '\n'
 _or!_ ≡ orBool
 _=_ ≡ eqChr
 
@@ -17,4 +26,4 @@ let
    consequent ≡ λ x putStrLn "Marks the spot!"
    alternate ≡ λ x putStrLn "Just dirt..."
    in
-   if! 'x' = input or! 'X' = input then consequent else alternate
+   if 'x' = input or! 'X' = input then consequent else alternate
