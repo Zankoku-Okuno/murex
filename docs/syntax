@@ -1,0 +1,180 @@
+Syntax
+======
+
+At its core, the syntax of Murex is very straightforward:
+  > S ::= _atom_ | '(' S S* ')'
+Using only this can be verbose; there is a reason why LISP is sometimes joked to stand for "Lots of Irritating, Silly Parenthesis".
+Therfore, Murex syntax works to hide many of these parenthesis with sugar.
+
+Currying
+--------
+
+In normal Lisps, application of a function `f` is done by wrapping `f` in parenthesis along with its arguments. Other programming languages often use parenthesis to provide arguments to a function. Both of these are counter to all traditional notations, where parenthesis are for grouping. All functions in Murex take exactly one argument, and the application of `f` to `x` is noted simply by placing `f` before and adjacent to `x`.
+
+Not using parenthesis for function-call means that parenthesis have only one, simple purpose: grouping. This simplicity, in addition to the important feature of _being very simple_, has the side effect of allowing for \eta-conversions and dropping parenthesis that wrap only a single item. We shall see also that, with distfixes, adding extra functions to a chain of computations requires editing in only one place rather than two, which can speed maintenence time.
+
+I should note there is one caveat to the single-purpose parenthesis. The unit literal is written `()`. It was expedient, and didn't clutter the namespace with additional reserved words, and, I think, is not all that bad. Given how many parenthesis we will not be using, unit literals shouldn't have much of an opportunity to get lost.
+
+
+Indentation-sensitivity
+-----------------------
+
+Every line which is indented at the same level is implicitly wrapped in parenthesis:
+  > (a b c)
+  > (x y z)
+  > # same as
+  > a b c
+  > x y z
+Further, every indent-dedent pair is wrapped in parenthesis:
+  > foo (bar sna)
+  > # same as
+  > foo
+  >   bar sna
+Since dedents require zero keystrokes, many parenthesis are easily dropped.
+  > (function (f arg1) (g arg2) (h arg3))
+  > # same as
+  > function
+  >    f arg1
+  >    g arg2
+  >    h arg3
+and also,
+  > (big (long (nested (annoying call))))
+  > # same as
+  > big
+  >    long
+  >       nested
+  >          annoying call
+though we will see that, with distfixes, there is an even better way of removing parenthesis from the second example.
+
+Finally, it is sometimes useful to introduce more than one indent at a time. For this, we use '\\' alone on a line to introduce additional indents. For example:
+  > (foo ((f x) (h y)))
+  > # same as
+  > foo
+  >    \\
+  >       f x
+  >       h y
+
+In the examples above, we have been able to eliminate every single parenthesis with a minimal amount of work. This is not uncommon, but there are more places where parenthesis are unnecessary.
+
+
+Cannonization
+-------------
+
+As I said, special forms appear at the beginning of a group, but in fact, sugaring means that special forms may be positioned more naturally. The act of moving special forms around and adding parenthesis is called cannonization. It proceeds in a specified order, so that precedence makes sense. We will examine each cannonizing transformation here in the order performed. We attempted to make canonizatin as intuitive as possible, but in the case of weird syntax errors, it may be useful to understand how your code is being transformed.
+
+The first step in cannonization is to freeze @-syntaxes. The @ symbol is used for four purposes in Murex: alias patterns, projectino functions, and update and modify functions. The first two, which look like '@x?' and '@`foo' for some label '`foo', are already atoms. Update and modify functions are a little trickier. An update function looks like '@(`foo ≡ x)' for some label 'foo' and expression 'x'. A modify function looks like '@(\foo f)' for a label 'foo' and function 'f'. Parenthesis around 'x' and 'f' are redundant. Thus:
+  > @(`foo ≡ (f x))
+  > # same as
+  > @(`foo ≡ f x)
+  > # and
+  > @(`foo (flip f))
+  > # same as
+  > @(`foo flip f)
+Importantly, the '≡' in the update function is part of the update function atom, and will not be modified hereafter.
+
+Next, when a definition is a non-value, it is introduced by a special form, such as 'type', 'module', 'macro', &c. THese special forms implicitly wrap their siblings in parenthesis. Thus:
+  > type (≡ T (A B C))
+  > # same as
+  > type ≡ T (A B C)
+
+Binding forms, like 'λ', 'Λ' and '∀' are very commonly used, and so we may drop some parenthesis. The parenthesis around the body may be dropped and, if the form is the last in a group, the surrounding parenthesis may be dropped.
+  > a (λ x (x a b)) b
+  > # same as
+  > a (λ x x a b) b
+  > # and
+  > f (λ x (x a b))
+  > # same as
+  > f λ x x a b
+
+A let form with three siblings, the second if which is 'in' has parenthesis wrapped around the siblings. For example:
+  > let ((x \def y) in (h y))
+  > # same as
+  > let (x \def f y) in (h x)
+Further, when a let form has only one sibling, and this sibling includes an 'in', implicit blocks are wrapped around all the expressions before the 'in' and after it. For example:
+  > (let ((block x x') in (block y y')))
+  > # same as
+  > let
+  >    x
+  >    x'
+  >    in
+  >    y
+  >    y'
+
+Finally, there are a few infixes with lower precedence than any user-defined distfix. These are handled in the last step of cannonization. The infixes are, in descending order of precedence,
+    → (right-associative)
+    : (right-associative)
+    ≡ (non-associative)
+
+
+Examining each step of cannonization in isolation is not terribly enlightening, but together, they work together to hide unintuitive syntax under a clear, paren-light surface representation. For example:
+  > type (≡ (: Reader (→ * (→ * *))) (Λ (e a) (→ e a)))
+  > # same as
+  > type Reader : * → * → * ≡ Λ (e a) e → a
+Even in this small example, 12 characters were saved, nearly all parenthesis made unneccesary, and symbols constantly used infix were transformed to be infix. Just for practice, let's look at the steps of the transformation:
+  > type Reader : * → * → * ≡ Λ (e a) e → a
+  > type ≡ (Reader : * → * → *) (Λ (e a) e → a)
+  > type ≡ (: Reader (* → * → *)) (Λ (e a) e → a)
+  > type ≡ (: Reader (→ * (→ * *))) (Λ (e a) e → a)
+  > type ≡ (: Reader (→ * (→ * *))) (Λ (e a) (→ e a))
+  > type (≡ (: Reader (→ * (→ * *))) (Λ (e a) (→ e a)))
+
+
+Anonymous Points
+----------------
+
+Anonymous points are there to ease partial application, particularly of distfixes; afterall, no one wants to come up with throwaway names. It should be noted up-front that they are not a general method of program composition. It's possible to get very tricky with anonymous points and thereby make your code tricky to read. Trickiness is no good for production programs.
+
+An anonymous point ("point" is a synonym for "name" in this context, though "anonymous name" just sounds silly) is written as a single underscore. We desugar by replacing the point with a generated symbol, and wrapping the current node inside a λ, Λ or ∀ (depending on context). A few examples will make this clear:
+  > add _ 1
+  > if _ then a else b
+  > if p then _ else b
+  > type ToB ≡ _ → B
+  > f (f _)
+  > # same as
+  > λ g1 add g1 1
+  > λ g2 if g2 then a else b
+  > λ g3 if p then g3 else b
+  > type ToB ≡ ∀ g4 g4 → B
+  > f (λ g5 f g5)
+
+When thereare two anonymous points in the same group, they each induce their own generate symbol. The parameters are in the same order as the original anonymous points. For example:
+  > if p then _ else _
+  > # same as
+  > λ (g1 g2) if p then g1 else g2
+
+One final wrinkle is that records, variants, and tuple do not count as groups when desugaring anonymous points. For example:
+  > (a, _)
+  > {`foo f _}
+  > {`foo _, `sna b}
+  > # same as
+  > λ g1 (a, g1)
+  > λ g2 {`foo f g2}
+  > λ g3 {`foo g3, `sna b}
+
+If you've used Haskell for a while, you'll notice how clear anonymous points would be instead of writing things like 'flip lookup x' or '\x -> case x of ...'. I'll leave you again with a warning not to over-use anonymous points. Compare the following two definitions of bind:
+  fun x >>= k ≡ k $ unMonad x
+  _>>=_ ≡ _ ∘ unMonad
+One of these is intelligible. Does the other take its arguments in the right order?
+
+
+Distfixes
+---------
+
+TODO user-driven
+TODO dotted-expressions
+
+
+Quasiquotation
+--------------
+
+TODO
+
+
+Macro Expansion
+---------------
+
+TODO May as well include some of this here, as it does impact visible syntax. Perhaps not the whole procedure, but some examples of their power
+
+
+
+

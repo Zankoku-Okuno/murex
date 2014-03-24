@@ -1,0 +1,10 @@
+We really just cannot allow unrestricted IO in our macros, and the reason is very simple: a user expects that compilation of a file will not have adverse effects on his system. At most a few, known files will be created/overwritten.
+
+Let's say you did have arbitrary IO. Then you might be surprised to find that `sudo murex install trojan` adds a startup process that connects to some external server, ie. gives the author of trojan a backdoor to everything on your computer. Yes, this would be very bad.
+
+Even if you restricted IO to simply read files, well then, installing trojan might:
+	1. Read the contents of /etc/passwd into the program
+	2. Sets the program up to email /etc/passwd and your currrent IP address to someone everytime you run trojan.
+Now the author can attack your password hashes off-line. Not fun.
+
+So, macros have extremely limited IO: they can only read files that are under the project directory. For packages you install from internet repositories, the only things under the project directory are the files that came with the package. For your own packages, well, don't write malicious programs or put any sensitive info in the directory. So, it's all same as normal. If you really don't trust a package, which can happen in any language, then I'd suggest sandboxing.

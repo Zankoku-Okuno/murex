@@ -1,0 +1,8 @@
+metavars
+========
+
+e   term, expression
+τ   type
+κ   kind
+I   constructor (introduction form)
+E   deconstructor (elimination form)
