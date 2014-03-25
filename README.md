@@ -90,21 +90,21 @@ I plan to build Murex roughly according to the stages outlined below. The goal i
   * Finite sums and products
 
 ### Stage Three
-  * Type and data constructors
-  * Pattern matching
+  * Multiple files
+  * Basic linker
 
 Scheduled cleanup
 
 ### Stage Four
+  * Type and data constructors
+  * Pattern matching
+
+### Stage Five
   * Type checking
   * Reference cells
 
-### Stage Five
-  * Module system
-
 ### Stage Six
-  * Multiple files
-  * Basic linker
+  * Module system
 
 Scheduled cleanup
 

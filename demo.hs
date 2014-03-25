@@ -67,9 +67,13 @@ main = do
         dedistfixed <- case Desugar.dedistfix distfixTable noAnon of
             Left err -> liftIO (print err) *> left ()
             Right val -> right val
-        liftIO $ print dedistfixed
+        --TODO dotted expressions
+        dotexprs <- case Desugar.dotExprs dedistfixed of
+            Left err -> liftIO (print err) *> left ()
+            Right val -> right val
+        liftIO $ print dotexprs
         --TODO unquasiquote
-        let desugared = dedistfixed
+        let desugared = dotexprs
         --FIXME check syntax instead of using that crappy Concrete.toAST function
         sep "ast"
         let ast = Concrete.toAST desugared

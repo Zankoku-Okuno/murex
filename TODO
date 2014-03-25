@@ -11,16 +11,16 @@ Primitives
 	all kinds of data types and operations
 		when I get to this, I should have some sort of code generator
 		it can generate all the code to link up the interpreter/compiler with the implementation
-Lexer
+Lexer/Parser
 	string interpolation
 		for this, I need to track at least paren depth, probably general enclosement depth
 	literate files
 	unicodizing
 	line comments take inordinately long to parse (noticable at 8 or more, grows apparently exponentially)
+	comprehensions
 
 Sugar
 	notation should be parsed in the lexer
-	anonymous points
 	override the spellings of keywords
 	error report notation config
 	validate notation better:

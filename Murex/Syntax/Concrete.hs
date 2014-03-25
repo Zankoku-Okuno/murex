@@ -16,9 +16,10 @@ data Atom = Lit A.Literal
           | Prim Primitive
     deriving (Eq)
 
-data Keyword = Lambda
+data Keyword = Lambda | BigLambda | Forall | To
              | Let | In | Block
-             | Def
+             | Type | Api | Module | Synonym
+             | Def | Ann
              | At | InfixDot | Ellipsis
   deriving (Eq)
 data Primitive = List | Nil
@@ -87,11 +88,20 @@ instance Show Primitive where
     show Modify = "#modify"
     show Update = "#update"
 instance Show Keyword where
+    show InfixDot = "dot"
     show Lambda = "λ"
+    show BigLambda = "Λ"
+    show Forall = "∀"
     show Block = "block"
     show Let = "let"
     show In = "in"
     show Def = "def"
+    show Ann = ":"
+    show To = "→"
+    show Type = "type"
+    show Api = "api"
+    show Module = "module"
+    show Synonym = "syn"
 
 instance Show (Hexpr SourcePos Atom) where
     show (Leaf _ x) = show x

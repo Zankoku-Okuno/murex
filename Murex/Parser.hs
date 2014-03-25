@@ -95,7 +95,7 @@ expression = choice [ parens
             xil = individual pos0 (Prim Xil)
         return $ xons `adjoinslPos` (xil:res)
     infixDot = do
-        dot <- leaf (const $ Kw InfixDot) (token Lex.Dot)
+        dot <- leaf (const $ Kw InfixDot) (token Lex.InfixDot)
         expr <- atom <|> parens
         return $ dot `adjoinPos` expr
 

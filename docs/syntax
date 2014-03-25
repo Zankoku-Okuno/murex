@@ -47,21 +47,26 @@ and also,
 though we will see that, with distfixes, there is an even better way of removing parenthesis from the second example.
 
 Finally, it is sometimes useful to introduce more than one indent at a time. For this, we use '\\' alone on a line to introduce additional indents. For example:
-  > (foo ((f x) (h y)))
+  > (foo ((f x) (h y)) (g z))
   > # same as
   > foo
   >    \\
   >       f x
   >       h y
+  >    g z
 
 In the examples above, we have been able to eliminate every single parenthesis with a minimal amount of work. This is not uncommon, but there are more places where parenthesis are unnecessary.
 
 
-Cannonization
--------------
+Lists, records and variants
+---------------------------
 
-As I said, special forms appear at the beginning of a group, but in fact, sugaring means that special forms may be positioned more naturally. The act of moving special forms around and adding parenthesis is called cannonization. It proceeds in a specified order, so that precedence makes sense. We will examine each cannonizing transformation here in the order performed. We attempted to make canonizatin as intuitive as possible, but in the case of weird syntax errors, it may be useful to understand how your code is being transformed.
+TODO meaning of []
+TODO meaning of (,,,)
+TODO meaning of {`foo x}
+TODO meaning of {`foo x, `bar y}
 
+FIXME rewrite for new section
 The first step in cannonization is to freeze @-syntaxes. The @ symbol is used for four purposes in Murex: alias patterns, projectino functions, and update and modify functions. The first two, which look like '@x?' and '@`foo' for some label '`foo', are already atoms. Update and modify functions are a little trickier. An update function looks like '@(`foo ≡ x)' for some label 'foo' and expression 'x'. A modify function looks like '@(\foo f)' for a label 'foo' and function 'f'. Parenthesis around 'x' and 'f' are redundant. Thus:
   > @(`foo ≡ (f x))
   > # same as
@@ -72,10 +77,16 @@ The first step in cannonization is to freeze @-syntaxes. The @ symbol is used fo
   > @(`foo flip f)
 Importantly, the '≡' in the update function is part of the update function atom, and will not be modified hereafter.
 
-Next, when a definition is a non-value, it is introduced by a special form, such as 'type', 'module', 'macro', &c. THese special forms implicitly wrap their siblings in parenthesis. Thus:
-  > type (≡ T (A B C))
+
+Cannonization
+-------------
+
+As I said, special forms appear at the beginning of a group, but in fact, sugaring means that special forms may be positioned more naturally. The act of moving special forms around and adding parenthesis is called cannonization. It proceeds in a specified order, so that precedence makes sense. We will examine each cannonizing transformation here in the order performed. We attempted to make canonizatin as intuitive as possible, but in the case of weird syntax errors, it may be useful to understand how your code is being transformed.
+
+First, when a definition is a non-value, it is introduced by a special form, such as 'type', 'module', 'macro', &c. THese special forms implicitly wrap their siblings in parenthesis. Thus:
+  > type (T ≡ A B C)
   > # same as
-  > type ≡ T (A B C)
+  > type T ≡ A B C
 
 Binding forms, like 'λ', 'Λ' and '∀' are very commonly used, and so we may drop some parenthesis. The parenthesis around the body may be dropped and, if the form is the last in a group, the surrounding parenthesis may be dropped.
   > a (λ x (x a b)) b
@@ -112,10 +123,10 @@ Examining each step of cannonization in isolation is not terribly enlightening, 
   > type Reader : * → * → * ≡ Λ (e a) e → a
 Even in this small example, 12 characters were saved, nearly all parenthesis made unneccesary, and symbols constantly used infix were transformed to be infix. Just for practice, let's look at the steps of the transformation:
   > type Reader : * → * → * ≡ Λ (e a) e → a
-  > type ≡ (Reader : * → * → *) (Λ (e a) e → a)
-  > type ≡ (: Reader (* → * → *)) (Λ (e a) e → a)
-  > type ≡ (: Reader (→ * (→ * *))) (Λ (e a) e → a)
-  > type ≡ (: Reader (→ * (→ * *))) (Λ (e a) (→ e a))
+  > type (Reader : * → * → * ≡ Λ (e a) e → a)
+  > type (≡ (Reader : * → * → *) (Λ (e a) e → a))
+  > type (≡ (: Reader (* → * → *)) (Λ (e a) e → a))
+  > type (≡ (: Reader (→ * (→ * *))) (Λ (e a) e → a))
   > type (≡ (: Reader (→ * (→ * *))) (Λ (e a) (→ e a)))
 
 
@@ -142,14 +153,20 @@ When thereare two anonymous points in the same group, they each induce their own
   > # same as
   > λ (g1 g2) if p then g1 else g2
 
-One final wrinkle is that records, variants, and tuple do not count as groups when desugaring anonymous points. For example:
+One final wrinkle is that lists, records, update and modify functions, variants, and tuples do not count as groups when desugaring anonymous points. For example:
+  > [a, b, _]
   > (a, _)
   > {`foo f _}
   > {`foo _, `sna b}
+  > @(`foo f _)
+  > @(`foo \def f _)
   > # same as
-  > λ g1 (a, g1)
-  > λ g2 {`foo f g2}
-  > λ g3 {`foo g3, `sna b}
+  > \l g1 [a b, g1]
+  > λ g2 (a, g2)
+  > λ g3 {`foo f g3}
+  > λ g4 {`foo g4, `sna b}
+  > \l g5 @(`foo f g5)
+  > \l g6 @(`foo \def f g6)
 
 If you've used Haskell for a while, you'll notice how clear anonymous points would be instead of writing things like 'flip lookup x' or '\x -> case x of ...'. I'll leave you again with a warning not to over-use anonymous points. Compare the following two definitions of bind:
   fun x >>= k ≡ k $ unMonad x
@@ -160,8 +177,13 @@ One of these is intelligible. Does the other take its arguments in the right ord
 Distfixes
 ---------
 
-TODO user-driven
-TODO dotted-expressions
+TODO
+
+
+Dotted-expressions
+------------------
+
+TODO
 
 
 Quasiquotation
@@ -176,5 +198,26 @@ Macro Expansion
 TODO May as well include some of this here, as it does impact visible syntax. Perhaps not the whole procedure, but some examples of their power
 
 
+Summary
+-------
 
+TODO
+
+Currying
+Indentation
+Data structures
+    List
+    Tuple
+    Record
+    Variant
+    Record functions (project, update, modify)
+Cannonization
+    Definition forms
+    Binding forms
+    Let-in form
+    Low-precedence infixes (\def, :, \to)
+Anonymous points
+Distfixes
+Dotted-expressions
+Quasiquotation
 

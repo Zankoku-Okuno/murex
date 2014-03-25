@@ -14,6 +14,8 @@ ie.: that is; to explain; from latin "in explicio"
 
 eg.: for example; from latin exemplum gratii
 
+wrt.: with respect to
+
 Lookup: see Map
 
 Map: A function mapping each of finitely many "keys" to a singe "value". The keyset is the domain and the valueset is the range. Lookup is the act of determining the value associated with a given key. Update and insertion extend the map with a new key-value pair; in update, the new key was already in the keyset, but in insertion, they new key was not already included. Deletion removes a key-value pair. It is usual to say "x \in M" for a key x and map M to mean that x is in the domain/keyset of M.

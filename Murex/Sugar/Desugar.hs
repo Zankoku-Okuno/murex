@@ -25,11 +25,17 @@ detectKeywords config = preorder (go keywords, id)
 
 cannonize :: QTree -> QTree
 cannonize input = let atSymbols = preorder (id, rewriteAtSign) input
-                      defHeaders = atSymbols --STUB
-                      lambdaesque = preorder (id, rewriteLambdaesque) defHeaders
+                      defSorts = preorder (id, rewriteDefSorts) atSymbols
+                      lambdaesque = preorder (id, rewriteLambdaesque) defSorts
                       letIn = preorder (id, rewriteLet) lambdaesque
-                      infixes = preorder (forwardInfix (`kwIs` Def)) letIn --STUB
+                      infixes = foldr1 (.) (preorder <$> lowInfixes) $ letIn
                   in infixes
+    where
+    lowInfixes = [ reverseInfix (`kwIs` To)
+                 , reverseInfix (`kwIs` Ann)
+                 , forwardInfix (`kwIs` Def)
+                 ]
+
 
 dedistfix :: DistfixTable QTree -> QTree -> Either (DistfixError QTree) QTree
 dedistfix = runDistfix
@@ -50,14 +56,29 @@ instance DistfixStructure QTree where
     nodeMatch (QLeaf _ x) (QLeaf _ y) = x == y
     nodeMatch _ _ = False
 
+dotExprs :: QTree -> Either ParseError QTree
+dotExprs x@(QLeaf _ _) = Right x
+dotExprs (QBranch pos xs) = adjoins pos <$> (rewriteDot =<< mapM dotExprs xs)
+dotExprs (Quote pos x) = Quote pos <$> dotExprs x
+dotExprs (Unquote pos x) = Unquote pos <$> dotExprs x
+dotExprs (Splice pos x) = Splice pos <$> dotExprs x
+
 
 ------ Keywords ------
 defaultKeywords :: AList String Keyword
-defaultKeywords = [ ("λ",   Lambda)
-                  , ("let", Let)
-                  , ("in",  In)
-                  , ("≡",   Def)
-                  --TODO :, type, data, macro, api, module
+defaultKeywords = [ ("λ",      Lambda)
+                  , ("Λ",      BigLambda)
+                  , ("∀",      Forall)
+                  , ("block",  Block)
+                  , ("let",    Let)
+                  , ("in",     In)
+                  , ("≡",      Def)
+                  , ("→",      To)
+                  , (":",      Ann)
+                  , ("type",   Type)
+                  , ("api",    Api)
+                  , ("module", Module)
+                  , ("syn",    Synonym)
                   ]
 
 ------ Cannonize ------
@@ -72,6 +93,11 @@ rewriteAtSign = tripBy (`kwIs` At) (id, go)
                | isLabel x -> (QLeaf (getPos at) (Prim Project) `adjoinPos` x) : xs
         _ -> at:after
     unLabel (Label name) = name
+
+rewriteDefSorts :: [QTree] -> [QTree]
+rewriteDefSorts (x:body) | x `kwElem` sorts = [x, adjoinsPos body]
+    where sorts = [Type, Api, Module, Synonym]
+rewriteDefSorts other = other
 
 rewriteLambdaesque :: [QTree] -> [QTree]
 rewriteLambdaesque = tripBy isLambdaesque (id, go)
@@ -96,6 +122,15 @@ rewriteLet = tripBy (`kwIs` Let) (id, go)
         inBlock xs@(x:_) = QLeaf (getPos x) (Kw Block) `adjoinslPos` xs
     go before l [def, i, body] | i `kwIs` In = before ++ [l, def, i, body]
     go before l after = before ++ [l `adjoinPos` adjoinsPos after]
+
+rewriteDot :: [QTree] -> Either ParseError [QTree]
+rewriteDot xs = tripBy isDotExpr (Right, rewrite) xs
+    where
+    isDotExpr (QBranch _ [QLeaf _ (Kw InfixDot), expr]) = True
+    isDotExpr _ = False
+    rewrite [] dot _ = error $ "TODO Error: " ++ intercalate " " (map show xs)
+    rewrite before dot after = rewriteDot (undot dot : adjoinsPos before : after)
+    undot (QBranch _ [QLeaf _ (Kw InfixDot), expr]) = expr
 
 
 ------ Helpers ------

@@ -25,7 +25,7 @@ data Token = Space
            | Indent | Newline | Dedent | OpenParen | CloseParen
            | OpenBrack | CloseBrack | OpenBrace | CloseBrace
            | OpenInterp String | CloseInterp String
-           | Dot | Comma | Ellipsis | At
+           | InfixDot | Dot | Comma | Ellipsis | At
            | Quote | Quasiquote | Unquote | Splice
            | Name String | Label Label | Bind String
            | Lit Literal
@@ -84,6 +84,10 @@ sanityCheck xs = (filterDoubleSpaces . filterEndspaces) xs
 postprocess :: [Pos Token] -> Either ParseError [Pos Token]
 postprocess input = go input
     where
+    translateDots (s@(_,x):(pos,Dot):xs) | isSpacy x = s : (pos, InfixDot) : translateDots xs
+        where isSpacy = (`elem` [Space, Newline, Indent, Dedent])
+    translateDots (x:xs) = x : translateDots xs
+    translateDots [] = []
     go [] = Right stripSpaces
     go (x:[]) = Right stripSpaces
     go ((_,Space):xs) = go xs
@@ -105,7 +109,7 @@ postprocess input = go input
     needsSpacey _ = Nothing
     isException (Name _) Dot = True
     isException _ _ = False
-    stripSpaces = filter ((/= Space) . snd) input
+    stripSpaces = filter ((/= Space) . snd) (translateDots input)
 
 
 ------ Core Combinators ------
@@ -244,6 +248,7 @@ instance Show Token where
     show CloseBrack = "`]'"
     show CloseBrace = "`}'"
     show Dot = "dot"
+    show InfixDot = "infix dot"
     show Comma = "comma"
     show Ellipsis = "`..'"
     show At = "`@'"
